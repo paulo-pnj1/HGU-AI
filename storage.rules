@@ -1,0 +1,26 @@
+// storage.rules — Regras de segurança do Firebase Storage
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Imagens clínicas ───────────────────────────────────────
+    // Apenas profissionais autenticados podem ler/escrever
+    // Máximo 10MB por ficheiro
+    // Apenas imagens
+    match /imagens/{consultaId}/{imageFile} {
+      allow read: if request.auth != null;
+
+      allow write: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if false; // Imagens clínicas não podem ser eliminadas
+    }
+
+    // ── Tudo o resto — bloqueado ───────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "app": {
+    "name": "HGU AI Clínico",
+    "tagline": "Assistente de apoio ao diagnóstico — Hospital Geral do Uíge"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "email": "Email institucional",
+    "password": "Palavra-passe",
+    "loginButton": "Iniciar sessão",
+    "loginError": "Credenciais inválidas. Verifique o seu email e palavra-passe.",
+    "unauthorized": "Acesso restrito a profissionais de saúde do HGU."
+  },
+  "chat": {
+    "placeholder": "Descreva os sintomas ou faça uma pergunta clínica...",
+    "send": "Enviar",
+    "newConsultation": "Nova consulta",
+    "endConsultation": "Encerrar consulta",
+    "generateReport": "Gerar relatório PDF",
+    "uploadImage": "Carregar imagem clínica",
+    "imageContext": "Descreva o contexto desta imagem (localização da lesão, há quanto tempo, etc.)",
+    "analyzing": "A analisar...",
+    "thinking": "IA a processar...",
+    "urgency": {
+      "verde": "Não urgente",
+      "amarelo": "Urgente",
+      "vermelho": "Emergência",
+      "indefinido": "A avaliar"
+    },
+    "disclaimer": "Este assistente apoia — não substitui — o julgamento clínico do profissional de saúde."
+  },
+  "form": {
+    "patientCode": "Código do doente",
+    "patientAge": "Idade",
+    "patientSex": "Sexo",
+    "male": "Masculino",
+    "female": "Feminino",
+    "municipio": "Município de origem",
+    "mainComplaint": "Queixa principal",
+    "symptomDuration": "Duração dos sintomas",
+    "fever": "Febre",
+    "temperature": "Temperatura (°C)",
+    "cough": "Tosse",
+    "diarrhea": "Diarreia",
+    "vomiting": "Vómitos",
+    "headache": "Cefaleias",
+    "chills": "Calafrios",
+    "pregnancy": "Gravidez",
+    "gestationalWeeks": "Semanas de gestação",
+    "currentMedication": "Medicação actual",
+    "allergies": "Alergias conhecidas",
+    "startChat": "Iniciar consulta",
+    "language": "Idioma"
+  },
+  "dashboard": {
+    "welcome": "Bem-vindo,",
+    "recentConsultations": "Consultas recentes",
+    "todayStats": "Estatísticas de hoje",
+    "total": "Total",
+    "urgent": "Urgentes",
+    "emergency": "Emergências",
+    "noConsultations": "Sem consultas registadas"
+  },
+  "report": {
+    "generating": "A gerar relatório...",
+    "download": "Descarregar PDF",
+    "title": "Relatório Clínico",
+    "generated": "Relatório gerado com sucesso"
+  },
+  "diseases": {
+    "paludismo": "Paludismo (Malária)",
+    "tuberculose": "Tuberculose",
+    "diarreia": "Doença diarreica",
+    "saude_materna": "Saúde materno-infantil",
+    "outro": "Outro"
+  }
+}
