@@ -1,0 +1,78 @@
+{
+  "app": {
+    "name": "HGU AI Médico",
+    "tagline": "Nzailu ya buketo ya misaamu — Hospitale ya Wige"
+  },
+  "auth": {
+    "login": "Kota",
+    "logout": "Bima",
+    "email": "Email ya hospitale",
+    "password": "Nzila ya bika",
+    "loginButton": "Kota ntangu",
+    "loginError": "Mazinu mabi. Tala email ye nzila ya bika.",
+    "unauthorized": "Nzila ya bakitisi ya HGU kaka."
+  },
+  "chat": {
+    "placeholder": "Zeyi misaamu to sala diyambulu ya médico...",
+    "send": "Tuma",
+    "newConsultation": "Buketo ya mpa",
+    "endConsultation": "Suka buketo",
+    "generateReport": "Baka rapport ya PDF",
+    "uploadImage": "Teka mbizi ya médico",
+    "imageContext": "Zeyi ntalu ya mbizi yai (wapi, ndeke mpi, etc.)",
+    "analyzing": "Tala tala...",
+    "thinking": "IA tala mpasi...",
+    "urgency": {
+      "verde": "Mpasi ya fioti",
+      "amarelo": "Mpasi ya ntangu",
+      "vermelho": "Emergencia",
+      "indefinido": "Tala ntangu"
+    },
+    "disclaimer": "Nzailu yai yandi na mukitisi — ko yandi na solo ya médico."
+  },
+  "form": {
+    "patientCode": "Nzina ya mpe",
+    "patientAge": "Bambula",
+    "patientSex": "Ntinu",
+    "male": "Bakala",
+    "female": "Nkento",
+    "municipio": "Munisipe",
+    "mainComplaint": "Mpasi ya ntete",
+    "symptomDuration": "Ntangu ya mpasi",
+    "fever": "Fiebele",
+    "temperature": "Mpio (°C)",
+    "cough": "Kasa",
+    "diarrhea": "Mbua",
+    "vomiting": "Vomito",
+    "headache": "Mpasi ya ntu",
+    "chills": "Kankamuka",
+    "pregnancy": "Mimba",
+    "gestationalWeeks": "Diambu ya samina",
+    "currentMedication": "Misaamu ya ntangu yai",
+    "allergies": "Mpasi ya misaamu",
+    "startChat": "Tambula buketo",
+    "language": "Ndinga"
+  },
+  "dashboard": {
+    "welcome": "Boyei,",
+    "recentConsultations": "Mabuketo ya ntama fioti",
+    "todayStats": "Makambu ya lelu",
+    "total": "Mvimba",
+    "urgent": "Ya ntangu",
+    "emergency": "Emergencia",
+    "noConsultations": "Buketo ko"
+  },
+  "report": {
+    "generating": "Baka rapport...",
+    "download": "Yula PDF",
+    "title": "Rapport ya Médico",
+    "generated": "Rapport salama mbote"
+  },
+  "diseases": {
+    "paludismo": "Nkama (Malaria)",
+    "tuberculose": "Tuberculose",
+    "diarreia": "Mbua ya mpe",
+    "saude_materna": "Nkento ye mwana",
+    "outro": "Mambu moye"
+  }
+}

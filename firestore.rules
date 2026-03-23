@@ -1,0 +1,40 @@
+// firestore.rules — Regras de segurança do Firestore
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Profissionais ──────────────────────────────────────────
+    match /profissionais/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // ── Consultas (presenciais) ────────────────────────────────
+    match /consultas/{consultaId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'patientCode', 'municipio', 'language']);
+
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      allow delete: if false;
+    }
+
+    // ── Teleconsultas (remotas — acesso público via servidor) ──
+    // Criação e leitura feitas APENAS via Firebase Admin SDK no servidor.
+    // O cliente nunca acede directamente a esta colecção.
+    match /teleconsultas/{tcId} {
+      allow read, write: if false; // Acesso exclusivo via Admin SDK
+    }
+
+    // ── Tudo o resto — bloqueado ───────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
