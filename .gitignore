@@ -9,6 +9,7 @@ out/
 build/
 
 # Variáveis de ambiente — NUNCA commitas estes ficheiros
+.json
 .env
 .env.local
 .env.development.local
