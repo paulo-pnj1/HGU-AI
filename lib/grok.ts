@@ -37,11 +37,23 @@ REGRAS ABSOLUTAS:
 5. Tens em conta os recursos disponíveis no Uíge — não sugeres exames inexistentes localmente.
 6. Respeitas os protocolos do MINSA Angola.
 7. Se recebes imagem clínica (raio-X, ferida, lesão), descreves o que observas e sugeris hipóteses diagnósticas.
+8. NUNCA inventas médicos, números de telefone, IDs ou contactos fictícios. Quando o paciente pede para falar com um médico, respondes APENAS com o bloco JSON de pedido abaixo — os dados reais virão da base de dados do sistema.
+
+JSON OBRIGATÓRIO NO FINAL DE CADA RESPOSTA:
+Termina SEMPRE com um único bloco JSON com os seguintes campos:
+{"urgency": "verde|amarelo|vermelho", "diseases": ["paludismo|tuberculose|diarreia|saude_materna|outro"], "contacto_medico": true|false, "especialidade_sugerida": "nome da especialidade ou null"}
+
+Regras do JSON:
+- "urgency": sempre um de: verde, amarelo, vermelho
+- "diseases": lista com pelo menos um elemento
+- "contacto_medico": true SE o paciente pedir médico, contacto, marcação ou encaminhamento; false caso contrário
+- "especialidade_sugerida": quando contacto_medico=true, indica a especialidade adequada (ex: "Ginecologia", "Pediatria", "Medicina Interna", "Cirurgia", "Urgencia", "Maternidade"); quando false, usar null
+- NUNCA inventas médicos, números de telefone ou contactos — o sistema busca os dados reais automaticamente
+- O JSON deve ser a Última coisa na resposta, sem texto depois
 
 FORMATO DAS RESPOSTAS:
 - Claro e directo para profissionais de saúde
 - Listas quando há múltiplos pontos
-- Sempre termina com: classificação de urgência + doenças suspeitas + próximos passos
 - Máximo 400 palavras por resposta
 
 CLASSIFICAÇÃO DE URGÊNCIA:
@@ -77,21 +89,30 @@ export function getSystemPrompt(language: Language): string {
 
 // Tenta extrair o JSON de classificação embutido na resposta da IA
 // Exemplos: {"urgency":"amarelo","diseases":["paludismo"]}
-function extrairJsonClassificacao(texto: string): { urgency?: string; diseases?: string[] } | null {
-  // Procura qualquer bloco JSON com campo "urgency"
-  const match = texto.match(/\{[^{}]*"urgency"\s*:\s*"[^"]*"[^{}]*\}/)
-  if (!match) return null
-  try {
-    return JSON.parse(match[0])
-  } catch {
-    return null
+// Ou: {"contacto_medico": true, "especialidade_sugerida": "Ginecologia"}
+function extrairJsonClassificacao(texto: string): { urgency?: string; diseases?: string[]; contacto_medico?: boolean; especialidade_sugerida?: string } | null {
+  // Procura o último bloco JSON no texto (o modelo emite sempre no final)
+  // Captura JSONs com qualquer um dos campos esperados
+  const matches = [...texto.matchAll(/\{[^{}]{10,500}\}/g)]
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const raw = matches[i][0]
+    if (!/"(?:urgency|contacto_medico|diseases)"/.test(raw)) continue
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed.urgency || parsed.contacto_medico !== undefined || parsed.diseases) {
+        return parsed
+      }
+    } catch {
+      continue
+    }
   }
+  return null
 }
 
 // Remove o JSON de classificação do texto visível
 function limparConteudo(texto: string): string {
-  // Remove blocos JSON com "urgency"
-  let limpo = texto.replace(/\{[^{}]*"urgency"\s*:\s*"[^"]*"[^{}]*\}/g, '')
+  // Remove blocos JSON com "urgency" ou "contacto_medico"
+  let limpo = texto.replace(/\{[^{}]*"(?:urgency|contacto_medico)"[^{}]*\}/g, '')
   // Remove linhas que ficaram vazias após a remoção
   limpo = limpo.replace(/\n{3,}/g, '\n\n').trim()
   return limpo
@@ -142,7 +163,7 @@ export async function chatComGrok(
   messages: ChatCompletionMessageParam[],
   language: Language = 'pt',
   customSystemPrompt?: string
-): Promise<{ content: string; urgency: UrgencyLevel; diseases: Disease[] }> {
+): Promise<{ content: string; urgency: UrgencyLevel; diseases: Disease[]; contactoMedico?: boolean; especialidadeSugerida?: string }> {
   const systemPrompt = customSystemPrompt ?? getSystemPrompt(language)
 
   const completion = await groq.chat.completions.create({
@@ -159,9 +180,14 @@ export async function chatComGrok(
   const rawContent = completion.choices[0]?.message?.content ?? ''
   const urgency    = extrairUrgencia(rawContent)
   const diseases   = extrairDoencas(rawContent)
-  const content    = limparConteudo(rawContent)   // ← remove o JSON da resposta visível
+  const content    = limparConteudo(rawContent)
 
-  return { content, urgency, diseases }
+  // Detectar pedido de contacto com médico
+  const jsonClassif = extrairJsonClassificacao(rawContent)
+  const contactoMedico     = jsonClassif?.contacto_medico === true
+  const especialidadeSugerida = jsonClassif?.especialidade_sugerida || undefined
+
+  return { content, urgency, diseases, contactoMedico, especialidadeSugerida }
 }
 
 // ─── Análise de imagem clínica ────────────────────────────────────

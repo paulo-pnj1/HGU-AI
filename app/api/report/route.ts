@@ -11,6 +11,9 @@ import {
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import { Language } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function POST(req: NextRequest) {
   try {
     const {

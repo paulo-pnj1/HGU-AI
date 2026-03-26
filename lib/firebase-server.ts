@@ -4,15 +4,17 @@ import { Message, Consultation, User } from '@/types'
 
 function getAdminDb() {
   if (!getApps().length) {
-    if (process.env.NODE_ENV === 'production') {
+    const projectId   = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+    const privateKey  = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+
+    if (projectId && clientEmail && privateKey) {
+      // Variáveis de ambiente disponíveis (produção ou dev com .env.local)
       initializeApp({
-        credential: cert({
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
+        credential: cert({ projectId, clientEmail, privateKey }),
       })
     } else {
+      // Fallback: ficheiro de service account local (desenvolvimento sem env vars)
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const serviceAccount = require('../hgu-ai-clinico-firebase-adminsdk-fbsvc-b3ec5a2409.json')
       initializeApp({ credential: cert(serviceAccount) })

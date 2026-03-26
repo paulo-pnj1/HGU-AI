@@ -9,6 +9,9 @@ import {
 } from '@/lib/firebase-server'
 import { Language } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
+
 // Gera código único de paciente remoto
 function gerarCodigoPaciente(): string {
   const ano = new Date().getFullYear()
@@ -144,28 +147,49 @@ export async function POST(req: NextRequest) {
       const {
         consultaId,
         message,
+        imageUrl,
+        imageContext,
         history,
         language = 'pt',
         patientContext,
       } = body
 
-      if (!consultaId || !message) {
-        return NextResponse.json({ error: 'consultaId e message obrigatórios' }, { status: 400 })
+      if (!consultaId || (!message && !imageUrl)) {
+        return NextResponse.json({ error: 'consultaId e message ou imageUrl obrigatórios' }, { status: 400 })
       }
+
+      const conteudoMensagem = message || imageContext || 'Imagem clínica enviada pelo paciente'
 
       // Guardar mensagem do paciente
       await adicionarMensagem(consultaId, {
         role: 'user',
-        content: message,
+        content: conteudoMensagem,
         timestamp: new Date(),
+        ...(imageUrl ? { imageUrl } : {}),
       }, 'teleconsultas')
 
       // Construir histórico com system prompt adequado para pacientes
       const sysPrompt = systemPromptPaciente(language, patientContext)
-      const msgs: GrokMessage[] = [
-        ...history,
-        { role: 'user', content: message },
-      ]
+
+      // Se há imagem, usar análise de imagem via Grok
+      let msgs: GrokMessage[]
+      if (imageUrl) {
+        msgs = [
+          ...history,
+          {
+            role: 'user' as const,
+            content: [
+              { type: 'image_url', image_url: { url: imageUrl } },
+              { type: 'text', text: conteudoMensagem },
+            ] as any,
+          },
+        ]
+      } else {
+        msgs = [
+          ...history,
+          { role: 'user' as const, content: message },
+        ]
+      }
 
       const aiResponse = await chatComGrok(msgs, language, sysPrompt)
 

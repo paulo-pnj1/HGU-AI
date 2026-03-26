@@ -5,10 +5,20 @@ import ReactMarkdown from 'react-markdown'
 import {
   Send, FileText, AlertTriangle, CheckCircle, Clock,
   Loader2, X, ImageIcon, Globe, Stethoscope,
-  MapPin, RefreshCw
+  MapPin, RefreshCw, Phone, Mail, UserCheck, Building2
 } from 'lucide-react'
 import { Message, UrgencyLevel, Language, MUNICIPIOS_UIGE, Municipio, Consultation } from '@/types'
 import { criarConsulta } from '@/lib/firebase'
+
+// ─── Tipos ────────────────────────────────────────────────────────
+interface MedicoInfo {
+  uid: string
+  nome: string
+  departamento: string
+  telefone: string
+  email: string
+  hospital: string
+}
 
 // UUID compatível com todos os browsers (incl. mobile antigo / HTTP)
 function genId(): string {
@@ -37,6 +47,107 @@ function UrgencyBadge({ urgency }: { urgency: UrgencyLevel }) {
     <span className={`inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border ${c.bg}`}>
       <Icon size={11} /><span className="hidden sm:inline">{c.label}</span>
     </span>
+  )
+}
+
+// ─── Card de Médico Registado ─────────────────────────────────────
+function MedicoCard({ medico }: { medico: MedicoInfo }) {
+  return (
+    <div className="rounded-xl border border-blue-500/30 overflow-hidden"
+      style={{ background: 'rgba(37,99,235,0.08)' }}>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-blue-500/20"
+        style={{ background: 'rgba(37,99,235,0.12)' }}>
+        <UserCheck size={13} className="text-blue-400 flex-shrink-0" />
+        <span className="text-xs font-semibold text-blue-300 truncate">{medico.nome}</span>
+      </div>
+      <div className="px-3 py-2 space-y-1.5">
+        <div className="flex items-center gap-2 text-xs text-slate-300">
+          <Building2 size={11} className="text-slate-500 flex-shrink-0" />
+          <span className="truncate">{medico.departamento} · {medico.hospital}</span>
+        </div>
+        {medico.telefone && (
+          <a href={`tel:${medico.telefone}`}
+            className="flex items-center gap-2 text-xs text-emerald-300 hover:text-emerald-200 transition-colors">
+            <Phone size={11} className="flex-shrink-0" />
+            <span>{medico.telefone}</span>
+          </a>
+        )}
+        {medico.email && (
+          <a href={`mailto:${medico.email}`}
+            className="flex items-center gap-2 text-xs text-blue-300 hover:text-blue-200 transition-colors truncate">
+            <Mail size={11} className="flex-shrink-0" />
+            <span className="truncate">{medico.email}</span>
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Bloco de Contactos Médicos ───────────────────────────────────
+function ContactosMedicosBloco({ especialidade, onClose }: { especialidade: string; onClose: () => void }) {
+  const [medicos, setMedicos] = useState<MedicoInfo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [erro,    setErro]    = useState(false)
+
+  useEffect(() => {
+    setLoading(true); setErro(false)
+    fetch(`/api/medicos?especialidade=${encodeURIComponent(especialidade)}`)
+      .then(r => r.json())
+      .then(data => {
+        setMedicos(data.medicos || [])
+        setLoading(false)
+      })
+      .catch(() => { setErro(true); setLoading(false) })
+  }, [especialidade])
+
+  return (
+    <div className="mx-3 sm:mx-4 mb-3 rounded-2xl border border-blue-500/25 overflow-hidden"
+      style={{ background: 'rgba(13,22,45,0.85)' }}>
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-blue-500/20"
+        style={{ background: 'rgba(37,99,235,0.15)' }}>
+        <div className="flex items-center gap-2">
+          <Stethoscope size={13} className="text-blue-400" />
+          <span className="text-xs font-semibold text-blue-200">
+            Médicos registados no HGU
+            {especialidade && <span className="text-blue-400 font-normal ml-1">· {especialidade}</span>}
+          </span>
+        </div>
+        <button onClick={onClose} className="text-slate-500 hover:text-slate-300 p-0.5">
+          <X size={13} />
+        </button>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="p-3">
+        {loading && (
+          <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-500">
+            <Loader2 size={13} className="animate-spin" />
+            A carregar médicos do sistema...
+          </div>
+        )}
+        {erro && (
+          <p className="text-xs text-red-400 text-center py-3">
+            Erro ao carregar dados. Verifique a ligação.
+          </p>
+        )}
+        {!loading && !erro && medicos.length === 0 && (
+          <div className="text-center py-4">
+            <p className="text-xs text-slate-400 mb-1">Nenhum médico encontrado para esta especialidade.</p>
+            <p className="text-xs text-slate-500">Contacte directamente o HGU: <span className="text-blue-300">+244 236 222 333</span></p>
+          </div>
+        )}
+        {!loading && !erro && medicos.length > 0 && (
+          <div className="space-y-2">
+            {medicos.map(m => <MedicoCard key={m.uid} medico={m} />)}
+            <p className="text-xs text-slate-600 text-center pt-1">
+              Dados reais registados no sistema HGU
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -151,7 +262,7 @@ function ConsultForm({ onStart, userId }: { onStart: (id: string, lang: Language
                   className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-medium border transition-all ${
                     lang === l ? 'text-white border-blue-500/50' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
                   }`}
-                  style={lang === l ? { background: 'linear-gradient(135deg, rgba(37,99,235,0.3), rgba(29,78,216,0.2))' } : {}}>
+                  style={lang === l ? { background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#ffffff' } : {}}>
                   {l === 'pt' ? '🇦🇴 Português' : '🌍 Kikongo'}
                 </button>
               ))}
@@ -186,6 +297,7 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
   const [imageContext,      setImageContext]        = useState('')
   const [generatingPDF,     setGeneratingPDF]      = useState(false)
   const [resumedPatientCode,setResumedPatientCode] = useState<string | null>(null)
+  const [contactosMedicos,  setContactosMedicos]   = useState<{ visible: boolean; especialidade: string }>({ visible: false, especialidade: '' })
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
@@ -236,6 +348,10 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
       if (data.content) {
         setMessages(prev => [...prev, { id: data.message?.id || genId(), role: 'assistant', content: data.content, timestamp: new Date(), urgency: data.urgency, diseases: data.diseases }])
         setUrgency(data.urgency)
+        // Mostrar contactos de médicos reais se a IA detectou pedido de contacto
+        if (data.contactoMedico) {
+          setContactosMedicos({ visible: true, especialidade: data.especialidadeSugerida || '' })
+        }
       }
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
@@ -305,7 +421,7 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
             {generatingPDF ? <Loader2 size={11} className="animate-spin" /> : <FileText size={11} />}
             <span className="hidden sm:inline">PDF</span>
           </button>
-          <button onClick={() => { setConsultaId(null); setMessages([]); setUrgency('indefinido'); setResumedPatientCode(null) }}
+          <button onClick={() => { setConsultaId(null); setMessages([]); setUrgency('indefinido'); setResumedPatientCode(null); setContactosMedicos({ visible: false, especialidade: '' }) }}
             className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 text-slate-400 hover:text-red-400 hover:border-red-500/20 transition-all">
             <X size={11} /><span className="hidden sm:inline">Encerrar</span>
           </button>
@@ -352,6 +468,14 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
         <div ref={bottomRef} />
       </div>
 
+      {/* Contactos de Médicos Reais */}
+      {contactosMedicos.visible && (
+        <ContactosMedicosBloco
+          especialidade={contactosMedicos.especialidade}
+          onClose={() => setContactosMedicos({ visible: false, especialidade: '' })}
+        />
+      )}
+
       {/* Preview imagem */}
       {pendingImage && (
         <div className="flex-shrink-0 px-3 sm:px-4 pb-2">
@@ -372,19 +496,20 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
       <div className="flex-shrink-0 p-3 sm:p-4 pb-safe border-t border-white/5 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
         <div className="flex gap-2">
           <div {...getRootProps()}
-            className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-all ${
-              isDragActive ? 'border-blue-400 bg-blue-500/10' : 'border-white/15 hover:border-white/30'
+            title="Carregar imagem clínica"
+            className={`flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 self-end rounded-xl border flex items-center justify-center transition-all ${
+              isDragActive ? 'border-blue-400 bg-blue-500/20 text-blue-300' : consultaId ? 'border-white/25 bg-white/8 hover:bg-white/15 hover:border-white/40 text-slate-200 cursor-pointer' : 'border-white/10 text-slate-600 cursor-not-allowed'
             }`}>
             <input {...getInputProps()} />
-            <ImageIcon size={13} className="text-slate-500" />
+            <ImageIcon size={16} />
           </div>
           <textarea value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
             placeholder="Descreva os sintomas ou faça uma pergunta..."
-            rows={1}
-            className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/40 max-h-28 placeholder:text-slate-600" />
+            rows={3}
+            className="flex-1 px-3 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/40 max-h-40 placeholder:text-slate-600" />
           <button onClick={sendMessage} disabled={(!input.trim() && !pendingImage) || loading}
-            className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white disabled:opacity-30 transition-all"
+            className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 self-end rounded-xl flex items-center justify-center text-white disabled:opacity-30 transition-all"
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
             <Send size={14} className="sm:hidden" />
             <Send size={15} className="hidden sm:block" />
