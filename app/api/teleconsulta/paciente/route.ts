@@ -5,6 +5,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db as getDb } from '@/lib/firebase-server'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function GET(req: NextRequest) {
   const nome = req.nextUrl.searchParams.get('nome')
   if (!nome) return NextResponse.json({ error: 'nome obrigatório' }, { status: 400 })

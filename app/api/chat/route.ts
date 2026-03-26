@@ -10,6 +10,9 @@ import {
 } from '@/lib/firebase-server'
 import { Language } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -39,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Consulta não encontrada' }, { status: 404 })
     }
 
-    let aiResponse: { content: string; urgency: any; diseases: any[] }
+    let aiResponse: { content: string; urgency: any; diseases: any[]; contactoMedico?: boolean; especialidadeSugerida?: string }
 
     if (imageUrl && imageContext) {
       // Análise de imagem clínica
@@ -87,6 +90,8 @@ export async function POST(req: NextRequest) {
       urgency: aiResponse.urgency,
       diseases: aiResponse.diseases,
       content: aiResponse.content,
+      contactoMedico: aiResponse.contactoMedico || false,
+      especialidadeSugerida: aiResponse.especialidadeSugerida || null,
     })
   } catch (error) {
     console.error('Erro na API de chat:', error)

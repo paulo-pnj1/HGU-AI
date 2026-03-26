@@ -1,7 +1,10 @@
-// app/api/upload/route.ts — Upload de imagens clínicas para Firebase Storage
+// app/api/upload/route.ts — Upload de imagens clínicas para Firebase Storage (Admin SDK)
 
 import { NextRequest, NextResponse } from 'next/server'
-import { uploadImagemClinica } from '@/lib/firebase'
+import { getAdminStorage } from '@/lib/firebase-admin'
+
+export const dynamic = 'force-dynamic'
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,11 +37,29 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const url = await uploadImagemClinica(file, consultaId)
+    // Converter File para Buffer
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const ext = file.name.split('.').pop() || 'jpg'
+    const destPath = `imagens/${consultaId}/${Date.now()}.${ext}`
+
+    // Upload via Admin SDK
+    const bucket = getAdminStorage().bucket()
+    const fileRef = bucket.file(destPath)
+    await fileRef.save(buffer, {
+      metadata: { contentType: file.type },
+    })
+
+    // Gerar URL público
+    await fileRef.makePublic()
+    const url = `https://storage.googleapis.com/${bucket.name}/${destPath}`
 
     return NextResponse.json({ url, success: true })
   } catch (error) {
     console.error('Erro no upload:', error)
-    return NextResponse.json({ error: 'Erro ao carregar imagem' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Erro ao carregar imagem', detail: String(error) },
+      { status: 500 }
+    )
   }
 }
