@@ -4,21 +4,25 @@ import { Message, Consultation, User } from '@/types'
 
 function getAdminDb() {
   if (!getApps().length) {
-    const projectId   = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    const projectId   = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-    const privateKey  = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
 
-    if (projectId && clientEmail && privateKey) {
-      // Variáveis de ambiente disponíveis (produção ou dev com .env.local)
-      initializeApp({
-        credential: cert({ projectId, clientEmail, privateKey }),
-      })
-    } else {
-      // Fallback: ficheiro de service account local (desenvolvimento sem env vars)
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const serviceAccount = require('../hgu-ai-clinico-firebase-adminsdk-fbsvc-b3ec5a2409.json')
-      initializeApp({ credential: cert(serviceAccount) })
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY ?? ''
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1)
     }
+    privateKey = privateKey.replace(/\\n/g, '\n')
+
+    if (!projectId || !clientEmail || !privateKey) {
+      throw new Error(
+        `Firebase Server: variáveis em falta — ` +
+        `projectId=${!!projectId} clientEmail=${!!clientEmail} privateKey=${!!privateKey}`
+      )
+    }
+
+    initializeApp({
+      credential: cert({ projectId, clientEmail, privateKey }),
+    })
   }
   return getFirestore()
 }
