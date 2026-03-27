@@ -21,11 +21,11 @@ export default function AuthPageClient() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative"
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6"
       style={{ background: 'linear-gradient(135deg, #050a14 0%, #0a1628 50%, #050a14 100%)' }}>
 
-      {/* Fundo decorativo */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* Fundo decorativo — fixo, sem animações */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-64 sm:w-96 h-64 sm:h-96 rounded-full opacity-10"
           style={{ background: 'radial-gradient(circle, #2563eb, transparent 70%)', filter: 'blur(60px)' }} />
         <div className="absolute bottom-1/4 right-1/4 w-48 sm:w-80 h-48 sm:h-80 rounded-full opacity-5"
@@ -37,14 +37,9 @@ export default function AuthPageClient() {
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-6 sm:mb-8">
-          <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-5">
-            <div className="absolute inset-0 rounded-2xl opacity-40 animate-pulse"
-              style={{ background: 'radial-gradient(circle, #3b82f6, transparent)', filter: 'blur(12px)' }} />
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #1d4ed8, #2563eb)', boxShadow: '0 16px 48px rgba(37,99,235,0.4)' }}>
-              <Stethoscope size={28} className="text-white sm:hidden" />
-              <Stethoscope size={36} className="text-white hidden sm:block" />
-            </div>
+          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-5 rounded-2xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #1d4ed8, #2563eb)', boxShadow: '0 16px 48px rgba(37,99,235,0.4)' }}>
+            <Stethoscope size={32} className="text-white" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">HGU AI Clínico</h1>
           <p className="text-blue-400/70 text-xs sm:text-sm mt-1.5">Hospital Geral do Uíge · Angola</p>
@@ -88,7 +83,7 @@ export default function AuthPageClient() {
                 </div>
               )}
               <button type="submit" disabled={loading}
-                className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-[0.98]"
+                className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:scale-[0.98]"
                 style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', boxShadow: '0 8px 24px rgba(37,99,235,0.4)' }}>
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Stethoscope size={16} />}
                 {loading ? 'A entrar...' : 'Iniciar sessão'}
@@ -114,14 +109,14 @@ export default function AuthPageClient() {
             🏠 É paciente? Faça a sua consulta em casa
           </p>
           <a href="/teleconsulta"
-            className="block w-full py-2.5 rounded-xl text-center text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+            className="block w-full py-2.5 rounded-xl text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 4px 16px rgba(124,58,237,0.35)' }}>
             Teleconsulta Remota →
           </a>
           <p className="text-slate-600 text-xs text-center mt-2">Sem conta ou deslocação ao hospital</p>
         </div>
 
-        <p className="text-slate-700 text-xs text-center mt-4">© 2025 Hospital Geral do Uíge · MINSA Angola</p>
+        <p className="text-slate-700 text-xs text-center mt-4">© 2025 pnjdev</p>
       </div>
     </div>
   )
