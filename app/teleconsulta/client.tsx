@@ -1627,6 +1627,11 @@ export default function TeleconsultaPageClient() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
     if (Notification.permission === 'denied') return
 
+    // Evitar múltiplas subscrições na mesma sessão
+    const jaSubscreuKey = `push_subscrito_${savedCode}`
+    if (sessionStorage.getItem(jaSubscreuKey)) return
+    sessionStorage.setItem(jaSubscreuKey, '1')
+
     const subscrever = async () => {
       try {
         const reg = await navigator.serviceWorker.ready
@@ -1648,12 +1653,13 @@ export default function TeleconsultaPageClient() {
           applicationServerKey: raw,
         })
 
-        // Guardar subscrição no servidor associada ao código do paciente
+        // Guardar subscrição no servidor associada ao código e nome do paciente
         await fetch('/api/push/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             patientCode: savedCode,
+            patientName: profile.nome,
             subscription: sub.toJSON(),
           }),
         })

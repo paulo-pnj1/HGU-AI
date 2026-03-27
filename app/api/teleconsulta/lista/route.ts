@@ -83,26 +83,47 @@ export async function PATCH(req: NextRequest) {
     // Enviar notificação push ao paciente
     try {
       const tc = await adminDb.collection('teleconsultas').doc(id).get()
-      const patientCode = tc.data()?.patientCode
+      const tcData = tc.data()
+      const patientCode = tcData?.patientCode
+      const patientName = tcData?.patientName
+
+      let subscription = null
+
+      // 1. Tentar pelo código da teleconsulta
       if (patientCode) {
         const subDoc = await adminDb.collection('push_subscriptions').doc(patientCode).get()
-        if (subDoc.exists) {
-          const subscription = subDoc.data()?.subscription
-          if (subscription) {
-            const temNota       = !!(notaEspecialista?.trim())
-            const temEncaminhar = !!encaminharPresencial
-            const corpo = temEncaminhar
-              ? 'O seu médico recomenda consulta presencial no HGU. Abra a app para mais detalhes.'
-              : temNota
-                ? 'O especialista deixou uma nota clínica para si. Abra a app para ver.'
-                : 'A sua teleconsulta foi revista por um especialista do HGU.'
-            await enviarNotificacaoPush(subscription, '🏥 Teleconsulta Revista', corpo, { patientCode })
-          }
-        }
+        if (subDoc.exists) subscription = subDoc.data()?.subscription
+      }
+
+      // 2. Fallback: tentar pelo nome do paciente
+      if (!subscription && patientName) {
+        const nomeKey = patientName.trim().toLowerCase().replace(/\s+/g, '_')
+        const subByName = await adminDb.collection('push_subscriptions_nome').doc(nomeKey).get()
+        if (subByName.exists) subscription = subByName.data()?.subscription
+      }
+
+      // 3. Fallback: procurar qualquer subscrição do mesmo paciente (pelo nome)
+      if (!subscription && patientName) {
+        const subsSnap = await adminDb.collection('push_subscriptions')
+          .where('patientName', '==', patientName).limit(1).get()
+        if (!subsSnap.empty) subscription = subsSnap.docs[0].data()?.subscription
+      }
+
+      if (subscription) {
+        const temNota       = !!(notaEspecialista?.trim())
+        const temEncaminhar = !!encaminharPresencial
+        const corpo = temEncaminhar
+          ? 'O seu médico recomenda consulta presencial no HGU. Abra a app para mais detalhes.'
+          : temNota
+            ? 'O especialista deixou uma nota clínica para si. Abra a app para ver.'
+            : 'A sua teleconsulta foi revista por um especialista do HGU.'
+        await enviarNotificacaoPush(subscription, '🏥 Teleconsulta Revista', corpo, { patientCode })
+        console.log('[PUSH] Notificação enviada para:', patientName, patientCode)
+      } else {
+        console.warn('[PUSH] Sem subscrição para:', patientName, patientCode)
       }
     } catch (pushErr) {
       console.warn('Push não enviado:', pushErr)
-      // Não falhar a requisição por causa do push
     }
 
     return NextResponse.json({ ok: true })
