@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Wifi, Search, RefreshCw, CheckCircle, Clock, AlertTriangle, Activity, MapPin, MessageSquare, User, Phone, X, FileText, Eye, UserCheck, Calendar, Baby, LogIn } from 'lucide-react'
+import { Wifi, Search, RefreshCw, CheckCircle, Clock, AlertTriangle, Activity, MapPin, MessageSquare, User, Phone, X, FileText, Eye, UserCheck, Calendar, Baby, LogIn, Building2, Send } from 'lucide-react'
 import { UrgencyLevel } from '@/types'
 import { format } from 'date-fns'
 import { pt as ptLocale } from 'date-fns/locale'
@@ -11,6 +11,7 @@ interface Teleconsulta {
   gravidez?: boolean; semanasGestacao?: number; language: 'pt' | 'kg'
   messages: any[]; urgency: UrgencyLevel; suspectedDiseases: string[]
   status: 'activa' | 'revisada'; createdAt: any; revisadoPor?: string
+  notaEspecialista?: string; encaminharPresencial?: boolean
 }
 
 const URGENCY = {
@@ -30,10 +31,17 @@ function UBadge({ u }: { u: UrgencyLevel }) {
   )
 }
 
-function DetailModal({ tc, onClose, onMarcarRevisada }: { tc: Teleconsulta; onClose: () => void; onMarcarRevisada: (id: string) => Promise<void> }) {
-  const [marking, setMarking] = useState(false)
+function DetailModal({ tc, onClose, onMarcarRevisada }: { tc: Teleconsulta; onClose: () => void; onMarcarRevisada: (id: string, nota: string, encaminhar: boolean) => Promise<void> }) {
+  const [marking,    setMarking]    = useState(false)
+  const [nota,       setNota]       = useState('')
+  const [encaminhar, setEncaminhar] = useState(false)
   const data = tc.createdAt?.toDate?.() || new Date()
-  const handleMarcar = async () => { setMarking(true); await onMarcarRevisada(tc.id); setMarking(false); onClose() }
+  const handleMarcar = async () => {
+    setMarking(true)
+    await onMarcarRevisada(tc.id, nota, encaminhar)
+    setMarking(false)
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -74,7 +82,7 @@ function DetailModal({ tc, onClose, onMarcarRevisada }: { tc: Teleconsulta; onCl
           {tc.gravidez && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-pink-500/30 bg-pink-500/10">
               <Baby size={14} className="text-pink-400 flex-shrink-0" />
-              <p className="text-pink-300 text-sm font-medium">Grávida{tc.semanasGestacao ? `-${tc.semanasGestacao} semanas` : ''}</p>
+              <p className="text-pink-300 text-sm font-medium">Grávida{tc.semanasGestacao ? ` — ${tc.semanasGestacao} semanas` : ''}</p>
             </div>
           )}
           {tc.suspectedDiseases.length > 0 && (
@@ -103,6 +111,47 @@ function DetailModal({ tc, onClose, onMarcarRevisada }: { tc: Teleconsulta; onCl
             </div>
           </div>
         </div>
+        {/* Nota do especialista + encaminhamento */}
+        {tc.status !== 'revisada' && (
+          <div className="flex-shrink-0 px-4 sm:px-5 pt-4 pb-2 border-t border-white/5 space-y-3">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
+                <Send size={11} /> Nota clínica para o paciente (opcional)
+              </label>
+              <textarea
+                value={nota}
+                onChange={e => setNota(e.target.value)}
+                placeholder="Ex: Diagnóstico confirmado. Recomendo hidratação oral e repouso por 48h..."
+                rows={3}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-xs placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-none"
+              />
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-all">
+              <input type="checkbox" checked={encaminhar} onChange={e => setEncaminhar(e.target.checked)} className="w-4 h-4 rounded accent-amber-500" />
+              <div className="flex items-center gap-2">
+                <Building2 size={14} className="text-amber-400 flex-shrink-0" />
+                <span className="text-amber-300 text-xs font-medium">Encaminhar para consulta presencial no HGU</span>
+              </div>
+            </label>
+          </div>
+        )}
+
+        {/* Nota já registada — consultas já revisadas */}
+        {tc.status === 'revisada' && tc.notaEspecialista && (
+          <div className="flex-shrink-0 px-4 sm:px-5 pt-3 pb-2 border-t border-white/5 space-y-2">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-violet-400"><UserCheck size={11} /> Nota do especialista</p>
+            <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+              <p className="text-violet-100 text-xs leading-relaxed">{tc.notaEspecialista}</p>
+            </div>
+            {tc.encaminharPresencial && (
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <Building2 size={13} className="text-amber-400 flex-shrink-0" />
+                <p className="text-amber-300 text-xs font-medium">Encaminhado para consulta presencial no HGU</p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex-shrink-0 flex gap-3 p-4 sm:p-5 border-t border-white/5">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 text-sm hover:bg-white/5">Fechar</button>
           {tc.status !== 'revisada' && (
@@ -110,8 +159,8 @@ function DetailModal({ tc, onClose, onMarcarRevisada }: { tc: Teleconsulta; onCl
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
               {marking ? <Activity size={14} className="animate-spin" /> : <UserCheck size={14} />}
-              <span className="hidden sm:inline">Marcar como revisada</span>
-              <span className="sm:hidden">Revisada</span>
+              <span className="hidden sm:inline">Confirmar revisão</span>
+              <span className="sm:hidden">Confirmar</span>
             </button>
           )}
         </div>
@@ -135,9 +184,13 @@ export default function TeleconsultasView({ currentUserId }: { currentUserId: st
 
   useEffect(() => { load() }, [load])
 
-  const handleMarcarRevisada = async (id: string) => {
-    await fetch('/api/teleconsulta/lista', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, profissionalId: currentUserId }) })
-    setLista(prev => prev.map(t => t.id === id ? { ...t, status: 'revisada' } : t))
+  const handleMarcarRevisada = async (id: string, nota: string, encaminhar: boolean) => {
+    await fetch('/api/teleconsulta/lista', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, profissionalId: currentUserId, notaEspecialista: nota || undefined, encaminharPresencial: encaminhar })
+    })
+    setLista(prev => prev.map(t => t.id === id ? { ...t, status: 'revisada', notaEspecialista: nota || undefined, encaminharPresencial: encaminhar } : t))
   }
 
   const filtered = lista.filter(t => {

@@ -1,4 +1,4 @@
-// public/sw.js-Service Worker HGU AI Clínico
+// public/sw.js — Service Worker HGU AI Clínico
 const CACHE = 'hgu-v3'
 const STATIC = [
   '/',
@@ -9,7 +9,7 @@ const STATIC = [
   '/icons/icon-512.png',
 ]
 
-// ── Instalar: pré-cache das páginas estáticas ──
+// ── Instalar ──
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
@@ -18,7 +18,7 @@ self.addEventListener('install', e => {
   )
 })
 
-// ── Activar: limpar caches antigas ──
+// ── Activar ──
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -29,24 +29,15 @@ self.addEventListener('activate', e => {
   )
 })
 
-// ── Fetch: Network-first com fallback para cache ──
+// ── Fetch ──
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
-
-  // Ignorar protocolos não-http
   if (!url.protocol.startsWith('http')) return
-
-  // Ignorar métodos que não sejam GET
   if (e.request.method !== 'GET') return
-
-  // Ignorar rotas de API-sempre vão à rede
   if (url.pathname.startsWith('/api/')) return
-
-  // Ignorar serviços externos (Firebase, Google)
   if (
     url.hostname.includes('firebase') ||
     url.hostname.includes('googleapis') ||
-    url.hostname.includes('gstatic') ||
     url.hostname.includes('anthropic')
   ) return
 
@@ -60,5 +51,53 @@ self.addEventListener('fetch', e => {
         return res
       })
       .catch(() => caches.match(e.request))
+  )
+})
+
+// ── Push Notifications ──
+self.addEventListener('push', e => {
+  let data = { titulo: 'HGU AI Clínico', corpo: 'A sua teleconsulta foi revista.', dados: {} }
+
+  try {
+    const parsed = e.data?.json()
+    if (parsed) data = { ...data, ...parsed }
+  } catch {}
+
+  const options = {
+    body: data.corpo,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    vibrate: [200, 100, 200],
+    tag: 'teleconsulta-revisada',
+    renotify: true,
+    data: data.dados,
+    actions: [
+      { action: 'ver', title: '👁️ Ver consulta' },
+      { action: 'fechar', title: 'Fechar' },
+    ],
+  }
+
+  e.waitUntil(
+    self.registration.showNotification(data.titulo, options)
+  )
+})
+
+// ── Clique na notificação ──
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+
+  if (e.action === 'fechar') return
+
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // Se já há uma janela aberta, focar nela
+      for (const client of clientList) {
+        if (client.url.includes('/teleconsulta') && 'focus' in client) {
+          return client.focus()
+        }
+      }
+      // Senão abrir nova janela
+      return clients.openWindow('/teleconsulta')
+    })
   )
 })

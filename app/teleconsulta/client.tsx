@@ -1,5 +1,5 @@
 'use client'
-// app/teleconsulta/page.tsx-Portal público de teleconsulta para pacientes
+// app/teleconsulta/page.tsx — Portal público de teleconsulta para pacientes
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -9,7 +9,7 @@ import {
   FileText, Phone, X, ArrowLeft, Wifi, Shield,
   MessageSquare, History, Plus, Trash2, Edit3,
   Menu, Home, Settings, LogOut, Baby, RefreshCw,
-  Eye, ChevronDown, ChevronUp, ImageIcon, Download, Smartphone
+  Eye, ChevronDown, ChevronUp, ImageIcon, Download, Smartphone, UserCheck
 } from 'lucide-react'
 import { MUNICIPIOS_UIGE, Language, UrgencyLevel, Municipio } from '@/types'
 
@@ -40,7 +40,7 @@ function toDate(v: any): Date {
 
 interface ChatMsg {
   id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'especialista'
   content: string
   timestamp: Date
   urgency?: UrgencyLevel
@@ -69,6 +69,8 @@ interface Teleconsulta {
   createdAt: any
   suspectedDiseases: string[]
   gravidez?: boolean
+  notaEspecialista?: string
+  encaminharPresencial?: boolean
 }
 
 type View = 'home' | 'nova' | 'consultas' | 'detalhe' | 'chat' | 'perfil'
@@ -91,8 +93,34 @@ function UrgBadge({ u }: { u: UrgencyLevel }) {
 }
 
 function Bubble({ msg, nome }: { msg: ChatMsg; nome: string }) {
-  const isUser = msg.role === 'user'
+  const isUser       = msg.role === 'user'
+  const isEspecialista = msg.role === 'especialista'
   const ts = msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
+
+  // Mensagem do especialista — estilo especial
+  if (isEspecialista) {
+    return (
+      <div className="flex justify-start mb-3">
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center mr-2 flex-shrink-0 mt-1"
+          style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}>
+          <UserCheck size={14} className="text-white" />
+        </div>
+        <div className="max-w-[85%]">
+          <p className="text-xs text-emerald-400 font-medium mb-1">👨‍⚕️ Nota do Especialista HGU</p>
+          <div className="rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed text-emerald-100 border border-emerald-500/30"
+            style={{ background: 'rgba(5,150,105,0.15)' }}>
+            <p className="whitespace-pre-wrap">{msg.content}</p>
+          </div>
+          <div className="flex items-center gap-2 mt-1 px-1">
+            <span className="text-xs text-slate-600">
+              {ts.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-2`}>
       {!isUser && (
@@ -313,7 +341,7 @@ function HomeScreen({ profile, setView }: { profile: PatientProfile | null; setV
 }
 
 // ─── Formulário de Edição de Perfil (paciente já autenticado) ──────
-// Apenas guarda dados localmente-sem chamada à API nem geração de código
+// Apenas guarda dados localmente — sem chamada à API nem geração de código
 function EditProfileForm({ initial, onSave, patientCode }: {
   initial: PatientProfile
   onSave: (p: PatientProfile) => void
@@ -543,7 +571,7 @@ function EditProfileForm({ initial, onSave, patientCode }: {
 }
 
 // ─── Formulário de Perfil / Dados do Paciente ─────────────────────
-// ─── Ecrã de entrada-novo paciente ou regressar ─────────────────
+// ─── Ecrã de entrada — novo paciente ou regressar ─────────────────
 function EntradaScreen({ onSave }: {
   onSave: (p: PatientProfile, code?: string) => void
 }) {
@@ -661,7 +689,7 @@ function EntradaScreen({ onSave }: {
         <button
           onClick={() => setModo('regressar')}
           className="w-full py-3 rounded-2xl text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 border border-violet-500/30 text-violet-300 hover:bg-violet-500/10">
-          <History size={15} /> Já sou paciente-usar código
+          <History size={15} /> Já sou paciente — usar código
         </button>
       </div>
       <p className="text-xs text-slate-600 text-center mt-4 leading-relaxed">
@@ -872,11 +900,11 @@ function ProfileForm({ initial, onSave, title, subtitle, onBack }: {
           <CheckCircle size={28} className="text-white" />
         </div>
         <h2 className="text-white font-bold text-xl mb-1">Registo concluído!</h2>
-        <p className="text-slate-400 text-sm mb-6">Guarde o seu código-vai precisar dele noutros dispositivos</p>
+        <p className="text-slate-400 text-sm mb-6">Guarde o seu código — vai precisar dele noutros dispositivos</p>
 
         <div className="w-full p-5 rounded-2xl border border-violet-500/30 bg-violet-500/8 mb-4">
           <p className="text-slate-400 text-xs mb-2">O seu código de paciente</p>
-          <p className="text-white font-bold text-3xl font-mono tracking-widest text-violet-300 mb-3">{codigoCriado}</p>
+          <p className="text-violet-300 font-bold text-3xl font-mono tracking-widest mb-3">{codigoCriado}</p>
           <button
             onClick={() => {
               navigator.clipboard?.writeText(codigoCriado)
@@ -1188,6 +1216,27 @@ function DetalheConsulta({ tc, onBack, onChat }: {
         </div>
       )}
 
+      {/* Aviso de encaminhamento presencial pelo especialista */}
+      {tc.encaminharPresencial && (
+        <div className="p-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 mb-4 flex items-start gap-3">
+          <span className="text-2xl flex-shrink-0">🏥</span>
+          <div>
+            <p className="text-amber-300 font-bold text-sm">O seu médico recomenda consulta presencial</p>
+            <p className="text-amber-400/80 text-xs mt-1">Dirija-se ao Hospital Geral do Uíge para ser atendido presencialmente.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Nota do especialista */}
+      {tc.notaEspecialista && (
+        <div className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/8 mb-4">
+          <p className="text-xs font-medium text-emerald-400 mb-2 flex items-center gap-1.5">
+            👨‍⚕️ Nota do Especialista HGU
+          </p>
+          <p className="text-emerald-100 text-sm leading-relaxed">{tc.notaEspecialista}</p>
+        </div>
+      )}
+
       {/* Doenças suspeitas */}
       {tc.suspectedDiseases?.length > 0 && (
         <div className="p-4 rounded-2xl border border-white/10 mb-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
@@ -1229,11 +1278,24 @@ function DetalheConsulta({ tc, onBack, onChat }: {
       </div>
 
       {/* Acções */}
-      <button onClick={() => onChat(tc)}
-        className="w-full py-3.5 rounded-2xl text-white font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
-        style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 6px 24px rgba(124,58,237,0.4)' }}>
-        <MessageSquare size={16} /> Continuar Consulta
-      </button>
+      {tc.status === 'revisada' ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/8">
+            <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+            <p className="text-emerald-300 text-sm font-medium">Consulta encerrada — revista pelo especialista</p>
+          </div>
+          <button onClick={() => onChat(tc)}
+            className="w-full py-3 rounded-2xl text-slate-400 text-sm font-medium border border-white/10 flex items-center justify-center gap-2 hover:bg-white/5 transition-all">
+            <Eye size={15} /> Ver histórico completo
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => onChat(tc)}
+          className="w-full py-3.5 rounded-2xl text-white font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 6px 24px rgba(124,58,237,0.4)' }}>
+          <MessageSquare size={16} /> Continuar Consulta
+        </button>
+      )}
     </div>
   )
 }
@@ -1261,6 +1323,9 @@ function ChatScreen({ profile, tcExistente, setView }: {
   const [imageContext, setImageContext] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  // Modo só leitura — consulta já foi revista pelo especialista
+  const isRevisada = tcExistente?.status === 'revisada'
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
 
@@ -1388,7 +1453,7 @@ function ChatScreen({ profile, tcExistente, setView }: {
       {/* Aviso */}
       <div className="flex-shrink-0 px-3 py-1 border-b border-amber-500/10 bg-amber-500/5">
         <p className="text-xs text-amber-500/80 text-center">
-          ⚕️ Assistente de apoio-não substitui médico. Emergência: ligue 112.
+          ⚕️ Assistente de apoio — não substitui médico. Emergência: ligue 112.
         </p>
       </div>
 
@@ -1441,36 +1506,54 @@ function ChatScreen({ profile, tcExistente, setView }: {
         </div>
       )}
 
-      {/* Input */}
-      <div className="flex-shrink-0 px-3 py-2 border-t border-white/8 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
-        <div className="flex gap-2 items-end">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageSelect}
-          />
-          <button
-            onClick={() => consultaId && fileInputRef.current?.click()}
-            title="Carregar imagem clínica"
-            className={`flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
-              consultaId ? 'border-white/25 bg-white/8 hover:bg-white/15 hover:border-white/40 text-slate-200 cursor-pointer' : 'border-white/10 text-slate-600 cursor-not-allowed'
-            }`}>
-            <ImageIcon size={15} />
-          </button>
-          <textarea value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-            placeholder="Descreva os seus sintomas..."
-            rows={1}
-            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40 max-h-32 placeholder:text-slate-600" />
-          <button onClick={sendMessage} disabled={(!input.trim() && !pendingImage) || loading}
-            className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-30 transition-all self-end"
-            style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
-            <Send size={15} />
-          </button>
+      {/* Input — bloqueado se revisada */}
+      {isRevisada ? (
+        <div className="flex-shrink-0 border-t border-white/8" style={{ background: 'rgba(13,22,45,0.5)' }}>
+          <div className="px-4 py-3 flex flex-col items-center gap-2 text-center">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 w-full justify-center">
+              <CheckCircle size={14} className="text-emerald-400 flex-shrink-0" />
+              <p className="text-emerald-300 text-xs font-medium">Esta consulta foi revista pelo especialista e está encerrada.</p>
+            </div>
+            <p className="text-slate-500 text-xs">Precisa de ajuda? Inicie uma nova consulta.</p>
+            <button
+              onClick={() => setView('nova')}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-white transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
+              + Nova Consulta
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex-shrink-0 px-3 py-2 border-t border-white/8 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
+          <div className="flex gap-2 items-end">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+            <button
+              onClick={() => consultaId && fileInputRef.current?.click()}
+              title="Carregar imagem clínica"
+              className={`flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
+                consultaId ? 'border-white/25 bg-white/8 hover:bg-white/15 hover:border-white/40 text-slate-200 cursor-pointer' : 'border-white/10 text-slate-600 cursor-not-allowed'
+              }`}>
+              <ImageIcon size={15} />
+            </button>
+            <textarea value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+              placeholder="Descreva os seus sintomas..."
+              rows={1}
+              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40 max-h-32 placeholder:text-slate-600" />
+            <button onClick={sendMessage} disabled={(!input.trim() && !pendingImage) || loading}
+              className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-30 transition-all self-end"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
+              <Send size={15} />
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   )
@@ -1502,7 +1585,7 @@ export default function TeleconsultaPageClient() {
     setHydrated(true)
   }, [])
 
-  // PWA-capturar evento de instalação
+  // PWA — capturar evento de instalação
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setInstalled(true)
@@ -1520,6 +1603,50 @@ export default function TeleconsultaPageClient() {
     const { outcome } = await installPrompt.userChoice
     if (outcome === 'accepted') { setInstalled(true); setInstallPrompt(null) }
   }
+
+  // ── Subscrição push — pedir permissão quando há perfil e código ──
+  useEffect(() => {
+    if (!savedCode || !profile) return
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    if (Notification.permission === 'denied') return
+
+    const subscrever = async () => {
+      try {
+        const reg = await navigator.serviceWorker.ready
+        const existente = await reg.pushManager.getSubscription()
+        if (existente) return // já subscrito
+
+        if (Notification.permission !== 'granted') {
+          const perm = await Notification.requestPermission()
+          if (perm !== 'granted') return
+        }
+
+        const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+        // Converter base64url para Uint8Array
+        const base64 = vapidKey.replace(/-/g, '+').replace(/_/g, '/')
+        const raw = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: raw,
+        })
+
+        // Guardar subscrição no servidor associada ao código do paciente
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            patientCode: savedCode,
+            subscription: sub.toJSON(),
+          }),
+        })
+      } catch (err) {
+        console.warn('Push subscription falhou:', err)
+      }
+    }
+
+    subscrever()
+  }, [savedCode, profile])
 
   // Só mostra o botão quando o browser tem o prompt nativo pronto
   const showInstallBtn = !installed && !!installPrompt
@@ -1615,7 +1742,7 @@ export default function TeleconsultaPageClient() {
 
   return (
     <div className="flex h-svh overflow-hidden" style={{ background: 'linear-gradient(135deg, #080d1a 0%, #0d1628 100%)' }}>
-      {/* Sidebar-só visível em desktop (lg+) */}
+      {/* Sidebar — só visível em desktop (lg+) */}
       {profile && (
         <Sidebar
           view={view}
@@ -1657,7 +1784,7 @@ export default function TeleconsultaPageClient() {
             </button>
           )}
 
-          {/* Botão instalar PWA-sempre visível se não instalado */}
+          {/* Botão instalar PWA — sempre visível se não instalado */}
           {!installed && (
             <button onClick={() => setShowInstallModal(true)}
               title="Instalar aplicação"
@@ -1677,12 +1804,12 @@ export default function TeleconsultaPageClient() {
 
         </header>
 
-        {/* Conteúdo com scroll-padding-bottom para não ficar atrás da bottom nav */}
+        {/* Conteúdo com scroll — padding-bottom para não ficar atrás da bottom nav */}
         <main className={`flex-1 overflow-y-auto ${profile && view !== 'chat' && view !== 'nova' ? 'pb-16 lg:pb-0' : ''}`}>
           {renderContent()}
         </main>
 
-        {/* Bottom Navigation Bar-apenas mobile, apenas com perfil */}
+        {/* Bottom Navigation Bar — apenas mobile, apenas com perfil */}
         {profile && (
           <nav className="lg:hidden flex-shrink-0 flex items-center border-t border-white/8 safe-bottom"
             style={{ background: 'rgba(8,13,26,0.97)', backdropFilter: 'blur(16px)' }}>
