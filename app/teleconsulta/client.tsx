@@ -94,7 +94,7 @@ function Bubble({ msg, nome }: { msg: ChatMsg; nome: string }) {
   const isUser = msg.role === 'user'
   const ts = msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-2`}>
       {!isUser && (
         <div className="w-8 h-8 rounded-xl flex items-center justify-center mr-2 flex-shrink-0 mt-1"
           style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
@@ -244,66 +244,66 @@ function Sidebar({ view, setView, profile, menuOpen, setMenuOpen, onLogout }: {
 // ─── Ecrã de Boas-vindas / Início ────────────────────────────────
 function HomeScreen({ profile, setView }: { profile: PatientProfile | null; setView: (v: View) => void }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-full p-6 text-center">
-      <div className="relative w-20 h-20 mx-auto mb-6">
+    <div className="flex flex-col items-center justify-center min-h-full p-4 text-center">
+      <div className="relative w-14 h-14 mx-auto mb-3">
         <div className="absolute inset-0 rounded-2xl opacity-30 animate-pulse"
           style={{ background: 'radial-gradient(circle, #7c3aed, transparent)' }} />
-        <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center shadow-2xl"
+        <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl"
           style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 8px 40px rgba(124,58,237,0.5)' }}>
-          <Stethoscope size={36} className="text-white" />
+          <Stethoscope size={26} className="text-white" />
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold text-white mb-2">
+      <h1 className="text-lg font-bold text-white mb-1">
         {profile ? `Olá, ${profile.nome.split(' ')[0]}! 👋` : 'HGU Teleconsulta'}
       </h1>
-      <p className="text-slate-400 text-sm mb-8 max-w-sm leading-relaxed">
+      <p className="text-slate-400 text-xs mb-4 max-w-sm leading-relaxed">
         {profile
           ? 'O que deseja fazer hoje?'
           : 'Consulte um assistente médico a partir de casa, sem se deslocar ao hospital.'}
       </p>
 
-      <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
+      <div className="grid grid-cols-1 gap-2 w-full max-w-sm">
         <button onClick={() => setView('nova')}
-          className="flex items-center gap-4 p-4 rounded-2xl border border-violet-500/30 text-left transition-all hover:border-violet-500/60 active:scale-[0.98]"
+          className="flex items-center gap-3 p-3 rounded-2xl border border-violet-500/30 text-left transition-all hover:border-violet-500/60 active:scale-[0.98]"
           style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(109,40,217,0.08))' }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
-            <Plus size={20} className="text-white" />
+            <Plus size={18} className="text-white" />
           </div>
           <div>
             <p className="text-white font-semibold text-sm">Nova Consulta</p>
-            <p className="text-slate-400 text-xs mt-0.5">Descrever sintomas agora</p>
+            <p className="text-slate-400 text-xs ">Descrever sintomas agora</p>
           </div>
-          <ChevronRight size={16} className="ml-auto text-violet-400" />
+          <ChevronRight size={14} className="ml-auto text-violet-400" />
         </button>
 
         {profile && (
           <button onClick={() => setView('consultas')}
-            className="flex items-center gap-4 p-4 rounded-2xl border border-white/8 text-left transition-all hover:border-white/15 active:scale-[0.98]"
+            className="flex items-center gap-3 p-3 rounded-2xl border border-white/8 text-left transition-all hover:border-white/15 active:scale-[0.98]"
             style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6)' }}>
-              <History size={20} className="text-white" />
+              <History size={18} className="text-white" />
             </div>
             <div>
               <p className="text-white font-semibold text-sm">Minhas Consultas</p>
-              <p className="text-slate-400 text-xs mt-0.5">Ver histórico e resultados</p>
+              <p className="text-slate-400 text-xs ">Ver histórico e resultados</p>
             </div>
-            <ChevronRight size={16} className="ml-auto text-slate-400" />
+            <ChevronRight size={14} className="ml-auto text-slate-400" />
           </button>
         )}
 
-        <div className="grid grid-cols-3 gap-2 mt-2">
+        <div className="grid grid-cols-3 gap-2 mt-1">
           {[
-            { icon: Shield, label: 'Seguro\ne Privado' },
-            { icon: Wifi,   label: 'Acesso\nRemoto' },
-            { icon: MessageSquare, label: 'Resposta\nImediata' },
+            { icon: Shield, label: 'Seguro' },
+            { icon: Wifi,   label: 'Remoto' },
+            { icon: MessageSquare, label: 'Imediato' },
           ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex flex-col items-center gap-2 p-3 rounded-2xl border border-white/8"
+            <div key={label} className="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-white/8"
               style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <Icon size={18} className="text-violet-400" />
-              <p className="text-xs text-slate-400 text-center whitespace-pre-line leading-tight">{label}</p>
+              <Icon size={15} className="text-violet-400" />
+              <p className="text-xs text-slate-400 text-center leading-tight">{label}</p>
             </div>
           ))}
         </div>
@@ -412,29 +412,29 @@ function EntradaScreen({ onSave }: {
 
   // modo === 'inicio'
   return (
-    <div className="max-w-md w-full mx-auto px-4 py-10 flex flex-col items-center">
-      <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+    <div className="max-w-md w-full mx-auto px-4 py-6 flex flex-col items-center">
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
         style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 8px 32px rgba(124,58,237,0.4)' }}>
-        <Stethoscope size={28} className="text-white" />
+        <Stethoscope size={22} className="text-white" />
       </div>
-      <h1 className="text-white font-bold text-2xl text-center mb-2">HGU Teleconsulta</h1>
-      <p className="text-slate-400 text-sm text-center mb-8 leading-relaxed">
+      <h1 className="text-white font-bold text-xl text-center mb-1">HGU Teleconsulta</h1>
+      <p className="text-slate-400 text-xs text-center mb-5 leading-relaxed">
         Consulta médica remota do Hospital Geral do Uíge
       </p>
-      <div className="w-full space-y-3">
+      <div className="w-full space-y-2">
         <button
           onClick={() => setModo('novo')}
-          className="w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-3 transition-all active:scale-95"
+          className="w-full py-3 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
           style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 6px 24px rgba(124,58,237,0.4)' }}>
-          <Plus size={20} /> Primeira vez / Nova consulta
+          <Plus size={17} /> Primeira vez / Nova consulta
         </button>
         <button
           onClick={() => setModo('regressar')}
-          className="w-full py-4 rounded-2xl text-sm font-semibold flex items-center justify-center gap-3 transition-all active:scale-95 border border-violet-500/30 text-violet-300 hover:bg-violet-500/10">
-          <History size={18} /> Já sou paciente — usar código
+          className="w-full py-3 rounded-2xl text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 border border-violet-500/30 text-violet-300 hover:bg-violet-500/10">
+          <History size={15} /> Já sou paciente — usar código
         </button>
       </div>
-      <p className="text-xs text-slate-600 text-center mt-6 leading-relaxed">
+      <p className="text-xs text-slate-600 text-center mt-4 leading-relaxed">
         🔒 Os seus dados são confidenciais e protegidos
       </p>
     </div>
@@ -477,7 +477,7 @@ function ProfileForm({ initial, onSave, title, subtitle, onBack }: {
   const [perfilCriado, setPerfilCriado] = useState<PatientProfile | null>(null)
   const [copiado,      setCopiado]      = useState(false)
 
-  const inp      = (campo: string) => `w-full px-3 py-3 rounded-xl text-white text-sm focus:outline-none focus:ring-2 placeholder:text-slate-600 transition-all ${
+  const inp      = (campo: string) => `w-full px-3 py-2 rounded-xl text-white text-sm focus:outline-none focus:ring-2 placeholder:text-slate-600 transition-all ${
     erros[campo]
       ? 'bg-red-500/10 border border-red-500/40 focus:ring-red-500/40'
       : 'bg-white/5 border border-white/10 focus:ring-violet-500/40'
@@ -599,13 +599,13 @@ function ProfileForm({ initial, onSave, title, subtitle, onBack }: {
   }
 
   return (
-    <div className="max-w-md w-full mx-auto px-4 py-6">
+    <div className="max-w-md w-full mx-auto px-4 py-3">
       {onBack && (
-        <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-4">
-          <ArrowLeft size={16} /> Voltar
+        <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-3">
+          <ArrowLeft size={15} /> Voltar
         </button>
       )}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
           <User size={18} className="text-white" />
@@ -623,7 +623,7 @@ function ProfileForm({ initial, onSave, title, subtitle, onBack }: {
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Nome */}
         <div>
           <label className="block text-xs font-medium text-slate-400 mb-1.5">Nome completo *</label>
@@ -709,7 +709,7 @@ function ProfileForm({ initial, onSave, title, subtitle, onBack }: {
       </div>
 
       <button onClick={handleGuardar} disabled={saving}
-        className="w-full mt-6 py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-60 transition-all active:scale-95"
+        className="w-full mt-4 py-3 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all active:scale-95"
         style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 6px 24px rgba(124,58,237,0.4)' }}>
         {saving ? <Loader2 size={18} className="animate-spin" /> : <ChevronRight size={18} />}
         {saving ? 'A registar...' : 'Guardar e obter código'}
@@ -766,7 +766,7 @@ function ConsultasList({ profile, onChat, onDetalhe }: {
   )
 
   return (
-    <div className="px-4 py-4 space-y-3 max-w-lg mx-auto w-full">
+    <div className="px-3 py-3 space-y-2 max-w-lg mx-auto w-full">
       <div className="flex items-center justify-between mb-2">
         <p className="text-slate-400 text-sm">{lista.length} consulta{lista.length !== 1 ? 's' : ''}</p>
         <button onClick={load} className="text-slate-500 hover:text-white transition-all">
@@ -780,7 +780,7 @@ function ConsultasList({ profile, onChat, onDetalhe }: {
         return (
           <div key={tc.id} className="rounded-2xl border border-white/8 overflow-hidden"
             style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <div className="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition-all"
+            <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-white/5 transition-all"
               onClick={() => onDetalhe(tc)}>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${cfg.cls}`}>
                 <Icon size={16} />
@@ -841,13 +841,13 @@ function DetalheConsulta({ tc, onBack, onChat }: {
   const isUrg   = tc.urgency === 'amarelo'
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 w-full">
-      <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-5 transition-all">
+    <div className="max-w-lg mx-auto px-3 py-3 w-full">
+      <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-3 transition-all">
         <ArrowLeft size={16} /> Voltar
       </button>
 
       {/* Cabeçalho */}
-      <div className="p-4 rounded-2xl border border-white/10 mb-4"
+      <div className="p-3 rounded-2xl border border-white/10 mb-3"
         style={{ background: 'rgba(255,255,255,0.05)' }}>
         <div className="flex items-start justify-between gap-2 mb-3">
           <div>
@@ -1056,7 +1056,7 @@ function ChatScreen({ profile, tcExistente, setView }: {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header do chat */}
-      <div className="flex-shrink-0 border-b border-white/8 px-4 py-3 flex items-center justify-between"
+      <div className="flex-shrink-0 border-b border-white/8 px-3 py-2 flex items-center justify-between"
         style={{ background: 'rgba(13,22,45,0.9)', backdropFilter: 'blur(10px)' }}>
         <div className="flex items-center gap-3">
           <button onClick={() => setView('consultas')} className="text-slate-400 hover:text-white mr-1">
@@ -1075,14 +1075,14 @@ function ChatScreen({ profile, tcExistente, setView }: {
       </div>
 
       {/* Aviso */}
-      <div className="flex-shrink-0 px-4 py-2 border-b border-amber-500/10 bg-amber-500/5">
+      <div className="flex-shrink-0 px-3 py-1 border-b border-amber-500/10 bg-amber-500/5">
         <p className="text-xs text-amber-500/80 text-center">
           ⚕️ Assistente de apoio — não substitui médico. Emergência: ligue 112.
         </p>
       </div>
 
       {/* Mensagens */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto px-3 py-2">
         {messages.length === 0 && !starting && (
           <div className="text-center py-10">
             <p className="text-slate-500 text-sm mb-3">Descreva os seus sintomas</p>
@@ -1131,7 +1131,7 @@ function ChatScreen({ profile, tcExistente, setView }: {
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 p-4 border-t border-white/8 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
+      <div className="flex-shrink-0 px-3 py-2 border-t border-white/8 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
         <div className="flex gap-2 items-end">
           <input
             ref={fileInputRef}
@@ -1143,20 +1143,20 @@ function ChatScreen({ profile, tcExistente, setView }: {
           <button
             onClick={() => consultaId && fileInputRef.current?.click()}
             title="Carregar imagem clínica"
-            className={`flex-shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${
+            className={`flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
               consultaId ? 'border-white/25 bg-white/8 hover:bg-white/15 hover:border-white/40 text-slate-200 cursor-pointer' : 'border-white/10 text-slate-600 cursor-not-allowed'
             }`}>
-            <ImageIcon size={16} />
+            <ImageIcon size={15} />
           </button>
           <textarea value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
             placeholder="Descreva os seus sintomas..."
-            rows={3}
-            className="flex-1 px-3 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40 max-h-40 placeholder:text-slate-600" />
+            rows={1}
+            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40 max-h-32 placeholder:text-slate-600" />
           <button onClick={sendMessage} disabled={(!input.trim() && !pendingImage) || loading}
-            className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-white disabled:opacity-30 transition-all self-end"
+            className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-30 transition-all self-end"
             style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
-            <Send size={16} />
+            <Send size={15} />
           </button>
         </div>
       </div>
@@ -1202,24 +1202,14 @@ export default function TeleconsultaPageClient() {
   }, [])
 
   const handleInstall = async () => {
-    if (installPrompt) {
-      // Dispositivo real — usar prompt nativo
-      installPrompt.prompt()
-      const { outcome } = await installPrompt.userChoice
-      if (outcome === 'accepted') { setInstalled(true); setInstallPrompt(null) }
-    } else {
-      // Localhost / iOS — mostrar instruções manuais
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
-      if (isIOS) {
-        alert('No iPhone/iPad:\n1. Toque em \u2191 (Partilhar)\n2. Seleccione "Adicionar ao ecrã principal"\n3. Toque em "Adicionar"')
-      } else {
-        alert('Para instalar:\n1. Clique nos 3 pontos (⋮) no topo do Chrome\n2. Seleccione "Instalar aplicação" ou "Adicionar ao ecrã principal"')
-      }
-    }
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') { setInstalled(true); setInstallPrompt(null) }
   }
 
-  // Mostrar botão: quando há prompt nativo OU quando não está instalado (para instruções manuais)
-  const showInstallBtn = !installed
+  // Só mostra o botão quando o browser tem o prompt nativo pronto
+  const showInstallBtn = !installed && !!installPrompt
 
   const saveProfile = (p: PatientProfile, code?: string) => {
     setProfile(p)
@@ -1394,14 +1384,8 @@ export default function TeleconsultaPageClient() {
                 <button key={item.id}
                   onClick={() => { setSelectedTc(null); setView(item.id); setMenuOpen(false) }}
                   className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-1 transition-all ${active ? 'text-violet-400' : 'text-slate-500'}`}>
-                  {item.id === 'nova'
-                    ? <div className="w-10 h-10 rounded-2xl flex items-center justify-center -mt-5 shadow-lg"
-                        style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 4px 16px rgba(124,58,237,0.5)' }}>
-                        <Icon size={20} className="text-white" />
-                      </div>
-                    : <Icon size={20} />
-                  }
-                  <span className={`text-xs leading-none ${item.id === 'nova' ? 'mt-1' : ''}`}>{item.label}</span>
+                  <Icon size={20} />
+                  <span className="text-xs leading-none">{item.label}</span>
                 </button>
               )
             })}

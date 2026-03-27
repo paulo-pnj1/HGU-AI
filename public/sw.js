@@ -1,5 +1,5 @@
 // public/sw.js — Service Worker HGU AI Clínico
-const CACHE = 'hgu-v1'
+const CACHE = 'hgu-v2'
 const STATIC = ['/', '/teleconsulta', '/auth']
 
 self.addEventListener('install', e => {
@@ -17,17 +17,26 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
-  // Apenas GET, ignora API e firebase
-  if (e.request.method !== 'GET') return
   const url = new URL(e.request.url)
+
+  // ── Ignorar tudo que não seja http/https (chrome-extension://, etc.) ──
+  if (!url.protocol.startsWith('http')) return
+
+  // ── Ignorar métodos que não sejam GET ──
+  if (e.request.method !== 'GET') return
+
+  // ── Ignorar rotas de API e serviços externos ──
   if (url.pathname.startsWith('/api/')) return
   if (url.hostname.includes('firebase') || url.hostname.includes('googleapis')) return
 
   e.respondWith(
     fetch(e.request)
       .then(res => {
-        const clone = res.clone()
-        caches.open(CACHE).then(c => c.put(e.request, clone))
+        // Só fazer cache de respostas válidas
+        if (res && res.status === 200 && res.type !== 'opaque') {
+          const clone = res.clone()
+          caches.open(CACHE).then(c => c.put(e.request, clone))
+        }
         return res
       })
       .catch(() => caches.match(e.request))
