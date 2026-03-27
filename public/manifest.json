@@ -2,11 +2,14 @@
   "name": "HGU AI Clínico",
   "short_name": "HGU AI",
   "description": "Sistema de apoio ao diagnóstico — Hospital Geral do Uíge, Angola",
-  "start_url": "/",
+  "start_url": "/teleconsulta",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#080d1a",
   "theme_color": "#080d1a",
   "orientation": "portrait-primary",
+  "lang": "pt",
+  "categories": ["medical", "health"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -32,7 +35,5 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "categories": ["medical", "health"],
-  "lang": "pt"
+  ]
 }

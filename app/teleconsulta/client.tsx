@@ -312,6 +312,236 @@ function HomeScreen({ profile, setView }: { profile: PatientProfile | null; setV
   )
 }
 
+// ─── Formulário de Edição de Perfil (paciente já autenticado) ──────
+// Apenas guarda dados localmente — sem chamada à API nem geração de código
+function EditProfileForm({ initial, onSave, patientCode }: {
+  initial: PatientProfile
+  onSave: (p: PatientProfile) => void
+  patientCode?: string | null
+}) {
+  const [nome,      setNome]      = useState(initial.nome     || '')
+  const [idade,     setIdade]     = useState(initial.idade?.toString() || '')
+  const [sexo,      setSexo]      = useState<'M' | 'F' | ''>(initial.sexo || '')
+  const [municipio, setMunicipio] = useState<Municipio>(initial.municipio as Municipio || MUNICIPIOS_UIGE[0])
+  const [telefone,  setTelefone]  = useState(initial.telefone  || '')
+  const [gravidez,  setGravidez]  = useState(initial.gravidez  || false)
+  const [semanas,   setSemanas]   = useState(initial.semanasGestacao?.toString() || '')
+  const [lang,      setLang]      = useState<Language>(initial.lang || 'pt')
+  const [erros,     setErros]     = useState<Record<string, string>>({})
+  const [saving,    setSaving]    = useState(false)
+  const [sucesso,   setSucesso]   = useState(false)
+  const [copiado,   setCopiado]   = useState(false)
+
+  const inp = (campo: string) => `w-full px-3 py-2 rounded-xl text-white text-sm focus:outline-none focus:ring-2 placeholder:text-slate-600 transition-all ${
+    erros[campo]
+      ? 'bg-red-500/10 border border-red-500/40 focus:ring-red-500/40'
+      : 'bg-white/5 border border-white/10 focus:ring-violet-500/40'
+  }`
+
+  const validar = (): boolean => {
+    const e: Record<string, string> = {}
+    const nomeT = nome.trim()
+    if (!nomeT)                           e.nome = 'Nome é obrigatório'
+    else if (nomeT.length < 3)            e.nome = 'Nome demasiado curto (mínimo 3 letras)'
+    else if (nomeT.split(' ').length < 2) e.nome = 'Introduza o nome completo (nome e apelido)'
+    else if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(nomeT)) e.nome = 'Nome não pode conter números ou símbolos'
+
+    if (idade) {
+      const n = parseInt(idade)
+      if (isNaN(n) || n < 0 || n > 120) e.idade = 'Idade inválida (0–120 anos)'
+    }
+
+    if (!sexo) e.sexo = 'Seleccione o sexo'
+
+    if (telefone.trim()) {
+      const tel = telefone.trim().replace(/\s/g, '')
+      if (!/^(\+244|244)?[89]\d{8}$/.test(tel) && !/^\+?[0-9]{7,15}$/.test(tel))
+        e.telefone = 'Telefone inválido (ex: +244 9XX XXX XXX)'
+    }
+
+    if (gravidez && sexo === 'F' && semanas) {
+      const s = parseInt(semanas)
+      if (isNaN(s) || s < 1 || s > 42) e.semanas = 'Semanas inválidas (1–42)'
+    }
+
+    setErros(e)
+    return Object.keys(e).length === 0
+  }
+
+  const handleGuardar = () => {
+    if (!validar()) return
+    setSaving(true)
+    try {
+      const perfil: PatientProfile = {
+        nome: nome.trim(),
+        idade: idade ? parseInt(idade) : undefined,
+        sexo: sexo || undefined,
+        municipio,
+        telefone: telefone.trim() || undefined,
+        gravidez: sexo === 'F' ? gravidez : false,
+        semanasGestacao: gravidez && semanas ? parseInt(semanas) : undefined,
+        lang,
+      }
+      localStorage.setItem('hgu_patient_profile', JSON.stringify(perfil))
+      onSave(perfil)
+      setSucesso(true)
+      setErros({})
+      setTimeout(() => setSucesso(false), 3000)
+    } catch {
+      setErros({ geral: 'Erro ao guardar os dados. Tente novamente.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="max-w-md w-full mx-auto px-4 py-3">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
+          <User size={18} className="text-white" />
+        </div>
+        <div>
+          <h2 className="text-white font-bold text-lg">Meu Perfil</h2>
+          <p className="text-slate-400 text-xs">Actualize os seus dados pessoais.</p>
+        </div>
+      </div>
+
+      {/* Código do paciente */}
+      {patientCode && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-violet-500/20 bg-violet-500/5 mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-slate-500 text-xs shrink-0">Código:</span>
+            <span className="text-violet-300 font-bold text-sm font-mono tracking-widest truncate">{patientCode}</span>
+          </div>
+          <button
+            onClick={() => {
+              navigator.clipboard?.writeText(patientCode)
+              setCopiado(true)
+              setTimeout(() => setCopiado(false), 2500)
+            }}
+            className={`text-xs px-2 py-1 rounded-lg border transition-all duration-300 shrink-0 ${
+              copiado
+                ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400'
+                : 'border-violet-500/30 text-violet-400 hover:text-violet-300'
+            }`}>
+            {copiado ? '✅ Copiado' : '📋 Copiar'}
+          </button>
+        </div>
+      )}
+
+      {erros.geral && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0 mt-1" />
+          <p className="text-red-300 text-xs">{erros.geral}</p>
+        </div>
+      )}
+
+      {sucesso && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+          <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+          <p className="text-emerald-300 text-xs font-medium">Perfil guardado com sucesso!</p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {/* Nome */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5">Nome completo *</label>
+          <input value={nome} onChange={e => { setNome(e.target.value); setErros(p => ({ ...p, nome: '' })) }}
+            placeholder="Ex.: Maria António Silva" className={inp('nome')} />
+          {erros.nome && <p className="text-red-400 text-xs mt-1">{erros.nome}</p>}
+        </div>
+
+        {/* Idade + Sexo */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Idade *</label>
+            <input type="number" value={idade} onChange={e => { setIdade(e.target.value); setErros(p => ({ ...p, idade: '' })) }}
+              placeholder="Anos" min="0" max="120" className={inp('idade')} />
+            {erros.idade && <p className="text-red-400 text-xs mt-1">{erros.idade}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Sexo *</label>
+            <div className="flex gap-2 h-[46px]">
+              {(['M', 'F'] as const).map(s => (
+                <button key={s} onClick={() => { setSexo(sexo === s ? '' : s); setErros(p => ({ ...p, sexo: '' })) }}
+                  className={`flex-1 rounded-xl border text-sm font-medium transition-all ${
+                    sexo === s
+                      ? 'border-violet-500/50 bg-violet-500/20 text-white'
+                      : erros.sexo
+                        ? 'border-red-500/40 bg-red-500/5 text-slate-400'
+                        : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+                  }`}>{s === 'M' ? 'Masc.' : 'Fem.'}</button>
+              ))}
+            </div>
+            {erros.sexo && <p className="text-red-400 text-xs mt-1">{erros.sexo}</p>}
+          </div>
+        </div>
+
+        {/* Município */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5"><MapPin size={11} className="inline mr-1" />Município</label>
+          <select value={municipio} onChange={e => setMunicipio(e.target.value as Municipio)} className={inp('municipio')} style={{ background: '#0d1628' }}>
+            {MUNICIPIOS_UIGE.map(m => <option key={m} value={m} style={{ background: '#0d1628' }}>{m}</option>)}
+          </select>
+        </div>
+
+        {/* Telefone */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5"><Phone size={11} className="inline mr-1" />Telefone (opcional)</label>
+          <input value={telefone} onChange={e => { setTelefone(e.target.value); setErros(p => ({ ...p, telefone: '' })) }}
+            placeholder="+244 9XX XXX XXX" className={inp('telefone')} />
+          {erros.telefone && <p className="text-red-400 text-xs mt-1">{erros.telefone}</p>}
+        </div>
+
+        {/* Gravidez */}
+        {sexo === 'F' && (
+          <div className="p-3 rounded-xl border border-pink-500/20 bg-pink-500/5">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={gravidez} onChange={e => setGravidez(e.target.checked)} className="w-4 h-4 rounded accent-pink-500" />
+              <span className="text-sm text-pink-300">Estou grávida</span>
+            </label>
+            {gravidez && (
+              <div className="mt-3">
+                <input type="number" value={semanas} onChange={e => { setSemanas(e.target.value); setErros(p => ({ ...p, semanas: '' })) }}
+                  placeholder="Semanas de gestação (1–42)" min="1" max="42" className={inp('semanas')} />
+                {erros.semanas && <p className="text-red-400 text-xs mt-1">{erros.semanas}</p>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Idioma */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5"><Globe size={11} className="inline mr-1" />Idioma</label>
+          <div className="flex gap-2">
+            {(['pt', 'kg'] as Language[]).map(l => (
+              <button key={l} onClick={() => setLang(l)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                  lang === l ? 'text-white border-violet-500/50' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+                }`}
+                style={lang === l ? { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' } : {}}>
+                {l === 'pt' ? '🇦🇴 Português' : '🌍 Kikongo'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <button onClick={handleGuardar} disabled={saving}
+        className="w-full mt-4 py-3 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all active:scale-95"
+        style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 6px 24px rgba(124,58,237,0.4)' }}>
+        {saving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+        {saving ? 'A guardar...' : 'Guardar dados'}
+      </button>
+      <p className="text-xs text-slate-600 text-center mt-3 leading-relaxed">
+        🔒 Os seus dados são confidenciais e protegidos pelo HGU
+      </p>
+    </div>
+  )
+}
+
 // ─── Formulário de Perfil / Dados do Paciente ─────────────────────
 // ─── Ecrã de entrada — novo paciente ou regressar ─────────────────
 function EntradaScreen({ onSave }: {
@@ -1276,14 +1506,15 @@ export default function TeleconsultaPageClient() {
       case 'chat':
         return <ChatScreen profile={profile!} tcExistente={selectedTc || undefined} setView={setView} />
       case 'perfil':
-        return (
-          <ProfileForm
-            initial={profile || {}}
-            onSave={saveProfile}
-            title="Meu Perfil"
-            subtitle="Actualize os seus dados pessoais."
+        return profile ? (
+          <EditProfileForm
+            initial={profile}
+            patientCode={savedCode}
+            onSave={(p) => {
+              setProfile(p)
+            }}
           />
-        )
+        ) : null
       default:
         return null
     }
