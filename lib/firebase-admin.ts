@@ -1,4 +1,4 @@
-// lib/firebase-admin.ts-Firebase Admin SDK (servidor)
+// lib/firebase-admin.ts — Firebase Admin SDK (servidor)
 // Usado para operações seguras do lado do servidor (API Routes)
 
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app'
@@ -9,28 +9,33 @@ import { getAuth } from 'firebase-admin/auth'
 function getAdminApp(): App {
   if (getApps().length > 0) return getApps()[0]
 
-  const projectId   = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  const projectId   = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-  const privateKey  = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
 
-  if (projectId && clientEmail && privateKey) {
-    // Variáveis de ambiente disponíveis (produção / .env.local)
-    return initializeApp({
-      credential: cert({ projectId, clientEmail, privateKey }),
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    })
+  // Normaliza a private key — o Vercel pode entregar com \n literais ou sem aspas
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY ?? ''
+  // Remove aspas externas se existirem
+  if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    privateKey = privateKey.slice(1, -1)
+  }
+  // Converte \n literais em newlines reais
+  privateKey = privateKey.replace(/\\n/g, '\n')
+
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error(
+      `Firebase Admin: variáveis de ambiente em falta. ` +
+      `projectId=${!!projectId} clientEmail=${!!clientEmail} privateKey=${!!privateKey}`
+    )
   }
 
-  // Fallback: ficheiro de service account local (desenvolvimento)
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const serviceAccount = require('../hgu-ai-clinico-firebase-adminsdk-fbsvc-b3ec5a2409.json')
   return initializeApp({
-    credential: cert(serviceAccount),
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    credential: cert({ projectId, clientEmail, privateKey }),
+    storageBucket,
   })
 }
 
-// ─── Exports lazy-só inicializam quando chamados ───────────────
+// ─── Exports lazy — só inicializam quando chamados ───────────────
 // IMPORTANTE: não executar getAdminApp() no nível do módulo,
 // senão o Next.js inicializa o Firebase durante o build.
 
