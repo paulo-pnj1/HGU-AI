@@ -1576,13 +1576,30 @@ export default function TeleconsultaPageClient() {
 
   // Carregar perfil e código do localStorage
   useEffect(() => {
-    try {
-      const raw  = localStorage.getItem(PROFILE_KEY)
-      const code = localStorage.getItem(CODE_KEY)
-      if (raw)  setProfile(JSON.parse(raw))
-      if (code) setSavedCode(code)
-    } catch {}
-    setHydrated(true)
+    const carregar = async () => {
+      try {
+        const raw  = localStorage.getItem(PROFILE_KEY)
+        const code = localStorage.getItem(CODE_KEY)
+        if (raw)  setProfile(JSON.parse(raw))
+        if (code) {
+          setSavedCode(code)
+        } else if (raw) {
+          // Tem perfil mas sem código — tentar recuperar pelo nome
+          try {
+            const perfil = JSON.parse(raw)
+            const res = await fetch(`/api/teleconsulta/paciente?nome=${encodeURIComponent(perfil.nome)}`)
+            const data = await res.json()
+            const tc = data.teleconsultas?.[0]
+            if (tc?.patientCode) {
+              setSavedCode(tc.patientCode)
+              localStorage.setItem(CODE_KEY, tc.patientCode)
+            }
+          } catch {}
+        }
+      } catch {}
+      setHydrated(true)
+    }
+    carregar()
   }, [])
 
   // PWA — capturar evento de instalação
