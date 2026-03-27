@@ -9,7 +9,7 @@ import {
   FileText, Phone, X, ArrowLeft, Wifi, Shield,
   MessageSquare, History, Plus, Trash2, Edit3,
   Menu, Home, Settings, LogOut, Baby, RefreshCw,
-  Eye, ChevronDown, ChevronUp, ImageIcon, Download
+  Eye, ChevronDown, ChevronUp, ImageIcon, Download, Smartphone
 } from 'lucide-react'
 import { MUNICIPIOS_UIGE, Language, UrgencyLevel, Municipio } from '@/types'
 
@@ -682,6 +682,87 @@ export function InstallBanner({ onInstall }: { onInstall: () => void }) {
         <Download size={18} />
         Instalar HGU AI no dispositivo
       </button>
+    </div>
+  )
+}
+
+// ─── Modal de instalação PWA ───────────────────────────────────────
+function InstallModal({ onClose, onInstall, canInstall }: {
+  onClose: () => void
+  onInstall: () => void
+  canInstall: boolean
+}) {
+  const isIOS = /iphone|ipad|ipod/i.test(typeof navigator !== 'undefined' ? navigator.userAgent : '')
+  const isAndroid = /android/i.test(typeof navigator !== 'undefined' ? navigator.userAgent : '')
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 p-5"
+        style={{ background: 'linear-gradient(135deg, #0d1628, #13203a)' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
+              <Smartphone size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm">Instalar HGU AI</p>
+              <p className="text-slate-400 text-xs">Acesso rápido no seu dispositivo</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Vantagens */}
+        <div className="space-y-2 mb-5">
+          {[
+            { icon: '⚡', text: 'Abre instantaneamente, sem browser' },
+            { icon: '📶', text: 'Funciona com internet lenta ou sem rede' },
+            { icon: '🔔', text: 'Acesso directo do ecrã inicial' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/5">
+              <span className="text-base">{item.icon}</span>
+              <span className="text-slate-300 text-xs">{item.text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Acção por dispositivo */}
+        {canInstall && (
+          <button onClick={onInstall}
+            className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 mb-3 transition-all active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 4px 20px rgba(124,58,237,0.4)' }}>
+            <Download size={16} /> Instalar agora
+          </button>
+        )}
+
+        {isIOS && (
+          <div className="p-3 rounded-xl border border-blue-500/20 bg-blue-500/5">
+            <p className="text-blue-300 text-xs font-medium mb-2">📱 No iPhone / iPad:</p>
+            <ol className="text-slate-400 text-xs space-y-1 list-decimal list-inside">
+              <li>Toque em <span className="text-white font-medium">Partilhar</span> <span className="text-slate-500">(ícone de caixa com seta ↑)</span></li>
+              <li>Role e toque em <span className="text-white font-medium">"Adicionar ao ecrã de início"</span></li>
+              <li>Confirme tocando em <span className="text-white font-medium">Adicionar</span></li>
+            </ol>
+          </div>
+        )}
+
+        {!canInstall && !isIOS && (
+          <div className="p-3 rounded-xl border border-slate-700 bg-white/3">
+            <p className="text-slate-400 text-xs text-center">
+              No Chrome: clique no ícone <span className="text-white font-medium">⊕</span> na barra de endereço para instalar.
+            </p>
+          </div>
+        )}
+      </div>
+
     </div>
   )
 }
@@ -1390,6 +1471,7 @@ function ChatScreen({ profile, tcExistente, setView }: {
           </button>
         </div>
       </div>
+
     </div>
   )
 }
@@ -1407,6 +1489,7 @@ export default function TeleconsultaPageClient() {
   const [savedCode,    setSavedCode]    = useState<string | null>(null)
   const [installPrompt, setInstallPrompt] = useState<any>(null)
   const [installed,    setInstalled]    = useState(false)
+  const [showInstallModal, setShowInstallModal] = useState(false)
 
   // Carregar perfil e código do localStorage
   useEffect(() => {
@@ -1574,11 +1657,11 @@ export default function TeleconsultaPageClient() {
             </button>
           )}
 
-          {/* Botão instalar PWA */}
-          {showInstallBtn && (
-            <button onClick={handleInstall}
+          {/* Botão instalar PWA — sempre visível se não instalado */}
+          {!installed && (
+            <button onClick={() => setShowInstallModal(true)}
               title="Instalar aplicação"
-              className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all">
+              className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-all">
               <Download size={13} />
               <span className="hidden sm:inline">Instalar</span>
             </button>
@@ -1623,6 +1706,15 @@ export default function TeleconsultaPageClient() {
           </nav>
         )}
       </div>
+
+      {/* Modal de instalação PWA */}
+      {showInstallModal && (
+        <InstallModal
+          onClose={() => setShowInstallModal(false)}
+          onInstall={() => { handleInstall(); setShowInstallModal(false) }}
+          canInstall={!!installPrompt}
+        />
+      )}
     </div>
   )
 }
