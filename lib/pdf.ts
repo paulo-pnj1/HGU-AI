@@ -1,4 +1,4 @@
-// lib/pdf.ts — Gerador de relatórios PDF clínicos para o HGU
+// lib/pdf.ts-Gerador de relatórios PDF clínicos para o HGU
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -18,9 +18,9 @@ const CORES = {
 
 function urgenciaLabel(u: UrgencyLevel): string {
   const map = {
-    verde: 'VERDE — Não urgente',
-    amarelo: 'AMARELO — Urgente (2–4h)',
-    vermelho: 'VERMELHO — Emergência',
+    verde: 'VERDE-Não urgente',
+    amarelo: 'AMARELO-Urgente (2–4h)',
+    vermelho: 'VERMELHO-Emergência',
     indefinido: 'Indefinido',
   }
   return map[u]

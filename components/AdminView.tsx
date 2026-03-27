@@ -57,7 +57,7 @@ export default function AdminView({ currentUser }: { currentUser: User }) {
           </button>
         </div>
 
-        {/* Stats grid — 2 cols mobile, 4 cols desktop */}
+        {/* Stats grid-2 cols mobile, 4 cols desktop */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <StatCard label="Total Consultas"  value={stats?.totalConsultas    || 0} sub="Todas"           color="bg-blue-500/20 text-blue-400"    icon={FileText} />
           <StatCard label="Hoje"             value={stats?.consultasHoje     || 0} sub={format(new Date(), "dd MMM", { locale: pt })} color="bg-emerald-500/20 text-emerald-400" icon={Calendar} />
@@ -65,7 +65,7 @@ export default function AdminView({ currentUser }: { currentUser: User }) {
           <StatCard label="Relatórios PDF"   value={stats?.relatoriosGerados || 0} sub="Gerados"         color="bg-teal-500/20 text-teal-400"     icon={FileText} />
         </div>
 
-        {/* Urgência — 3 cols mobile e desktop */}
+        {/* Urgência-3 cols mobile e desktop */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
           <StatCard label="Emergências" value={stats?.emergencias || 0} color="bg-red-500/20 text-red-400"       icon={AlertTriangle} />
           <StatCard label="Urgentes"    value={stats?.urgentes    || 0} color="bg-amber-500/20 text-amber-400"   icon={Clock} />
@@ -118,7 +118,7 @@ export default function AdminView({ currentUser }: { currentUser: User }) {
           )}
         </div>
 
-        {/* Info sistema — 1 col mobile, 2 cols desktop */}
+        {/* Info sistema-1 col mobile, 2 cols desktop */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="p-4 sm:p-5 rounded-2xl border border-white/5" style={{ background: 'rgba(255,255,255,0.03)' }}>
             <h3 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm"><Shield size={14} className="text-blue-400" /> Sistema</h3>

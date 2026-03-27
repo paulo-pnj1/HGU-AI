@@ -1,7 +1,7 @@
 {
   "name": "hgu-ai-diagnostico",
   "version": "1.0.0",
-  "description": "Sistema de IA para apoio ao diagnóstico clínico — Hospital Geral do Uíge",
+  "description": "Sistema de IA para apoio ao diagnóstico clínico-Hospital Geral do Uíge",
   "private": true,
   "scripts": {
     "dev": "next dev",

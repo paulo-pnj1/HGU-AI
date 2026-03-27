@@ -1,4 +1,4 @@
-// types/index.ts — Tipos globais HGU AI
+// types/index.ts-Tipos globais HGU AI
 
 export type Language = 'pt' | 'kg'
 export type UrgencyLevel = 'verde' | 'amarelo' | 'vermelho' | 'indefinido'

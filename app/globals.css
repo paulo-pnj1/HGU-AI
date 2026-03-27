@@ -19,7 +19,7 @@ html, body {
   color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  /* NUNCA usar overflow:hidden aqui — bloqueia scroll em mobile */
+  /* NUNCA usar overflow:hidden aqui-bloqueia scroll em mobile */
 }
 
 /* Scrollbar dark */
@@ -56,7 +56,7 @@ select option { background: #0d1628; color: #f1f5f9; }
 /* Safe area para iPhones com notch */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-/* Smooth touch scrolling — CRÍTICO para mobile */
+/* Smooth touch scrolling-CRÍTICO para mobile */
 * { -webkit-tap-highlight-color: transparent; }
 html { scroll-behavior: smooth; }
 input, textarea, select, button { touch-action: manipulation; }

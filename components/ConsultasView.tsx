@@ -227,7 +227,7 @@ export default function ConsultasView({ userId, userRole, onContinuarChat }: Con
             <span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
-        {/* Filtros — scrollable horizontal no mobile */}
+        {/* Filtros-scrollable horizontal no mobile */}
         <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
           {([['all', 'Todas', 'bg-white/10 text-white border-white/20'],
             ['vermelho', 'Emergência', 'bg-red-500/20 text-red-300 border-red-500/30'],

@@ -238,7 +238,7 @@ export default function DashboardPageClient() {
           onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar — hidden on mobile, slide-in overlay */}
+      {/* Sidebar-hidden on mobile, slide-in overlay */}
       <aside className={`
         fixed top-0 left-0 h-full z-50 w-[85vw] sm:w-72 transition-transform duration-300
         lg:relative lg:translate-x-0 lg:z-auto lg:w-72

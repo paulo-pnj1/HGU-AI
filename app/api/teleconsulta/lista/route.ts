@@ -1,4 +1,4 @@
-// app/api/teleconsulta/lista/route.ts — Listar e actualizar teleconsultas (uso interno)
+// app/api/teleconsulta/lista/route.ts-Listar e actualizar teleconsultas (uso interno)
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db as getDb } from '@/lib/firebase-server'
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     let snap
     if (patientCode) {
-      // Busca por código de paciente — para recuperar perfil em novo dispositivo
+      // Busca por código de paciente-para recuperar perfil em novo dispositivo
       snap = await adminDb
         .collection('teleconsultas')
         .where('patientCode', '==', patientCode.toUpperCase())

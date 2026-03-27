@@ -1,4 +1,4 @@
-// lib/firebase.ts — Firebase com CRUD completo para HGU AI
+// lib/firebase.ts-Firebase com CRUD completo para HGU AI
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
 import {

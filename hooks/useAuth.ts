@@ -1,4 +1,4 @@
-// hooks/useAuth.ts — Hook de autenticação
+// hooks/useAuth.ts-Hook de autenticação
 
 'use client'
 

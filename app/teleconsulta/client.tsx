@@ -1,5 +1,5 @@
 'use client'
-// app/teleconsulta/page.tsx — Portal público de teleconsulta para pacientes
+// app/teleconsulta/page.tsx-Portal público de teleconsulta para pacientes
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -313,7 +313,7 @@ function HomeScreen({ profile, setView }: { profile: PatientProfile | null; setV
 }
 
 // ─── Formulário de Edição de Perfil (paciente já autenticado) ──────
-// Apenas guarda dados localmente — sem chamada à API nem geração de código
+// Apenas guarda dados localmente-sem chamada à API nem geração de código
 function EditProfileForm({ initial, onSave, patientCode }: {
   initial: PatientProfile
   onSave: (p: PatientProfile) => void
@@ -543,7 +543,7 @@ function EditProfileForm({ initial, onSave, patientCode }: {
 }
 
 // ─── Formulário de Perfil / Dados do Paciente ─────────────────────
-// ─── Ecrã de entrada — novo paciente ou regressar ─────────────────
+// ─── Ecrã de entrada-novo paciente ou regressar ─────────────────
 function EntradaScreen({ onSave }: {
   onSave: (p: PatientProfile, code?: string) => void
 }) {
@@ -661,7 +661,7 @@ function EntradaScreen({ onSave }: {
         <button
           onClick={() => setModo('regressar')}
           className="w-full py-3 rounded-2xl text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 border border-violet-500/30 text-violet-300 hover:bg-violet-500/10">
-          <History size={15} /> Já sou paciente — usar código
+          <History size={15} /> Já sou paciente-usar código
         </button>
       </div>
       <p className="text-xs text-slate-600 text-center mt-4 leading-relaxed">
@@ -872,7 +872,7 @@ function ProfileForm({ initial, onSave, title, subtitle, onBack }: {
           <CheckCircle size={28} className="text-white" />
         </div>
         <h2 className="text-white font-bold text-xl mb-1">Registo concluído!</h2>
-        <p className="text-slate-400 text-sm mb-6">Guarde o seu código — vai precisar dele noutros dispositivos</p>
+        <p className="text-slate-400 text-sm mb-6">Guarde o seu código-vai precisar dele noutros dispositivos</p>
 
         <div className="w-full p-5 rounded-2xl border border-violet-500/30 bg-violet-500/8 mb-4">
           <p className="text-slate-400 text-xs mb-2">O seu código de paciente</p>
@@ -1388,7 +1388,7 @@ function ChatScreen({ profile, tcExistente, setView }: {
       {/* Aviso */}
       <div className="flex-shrink-0 px-3 py-1 border-b border-amber-500/10 bg-amber-500/5">
         <p className="text-xs text-amber-500/80 text-center">
-          ⚕️ Assistente de apoio — não substitui médico. Emergência: ligue 112.
+          ⚕️ Assistente de apoio-não substitui médico. Emergência: ligue 112.
         </p>
       </div>
 
@@ -1502,7 +1502,7 @@ export default function TeleconsultaPageClient() {
     setHydrated(true)
   }, [])
 
-  // PWA — capturar evento de instalação
+  // PWA-capturar evento de instalação
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setInstalled(true)
@@ -1615,7 +1615,7 @@ export default function TeleconsultaPageClient() {
 
   return (
     <div className="flex h-svh overflow-hidden" style={{ background: 'linear-gradient(135deg, #080d1a 0%, #0d1628 100%)' }}>
-      {/* Sidebar — só visível em desktop (lg+) */}
+      {/* Sidebar-só visível em desktop (lg+) */}
       {profile && (
         <Sidebar
           view={view}
@@ -1657,7 +1657,7 @@ export default function TeleconsultaPageClient() {
             </button>
           )}
 
-          {/* Botão instalar PWA — sempre visível se não instalado */}
+          {/* Botão instalar PWA-sempre visível se não instalado */}
           {!installed && (
             <button onClick={() => setShowInstallModal(true)}
               title="Instalar aplicação"
@@ -1677,12 +1677,12 @@ export default function TeleconsultaPageClient() {
 
         </header>
 
-        {/* Conteúdo com scroll — padding-bottom para não ficar atrás da bottom nav */}
+        {/* Conteúdo com scroll-padding-bottom para não ficar atrás da bottom nav */}
         <main className={`flex-1 overflow-y-auto ${profile && view !== 'chat' && view !== 'nova' ? 'pb-16 lg:pb-0' : ''}`}>
           {renderContent()}
         </main>
 
-        {/* Bottom Navigation Bar — apenas mobile, apenas com perfil */}
+        {/* Bottom Navigation Bar-apenas mobile, apenas com perfil */}
         {profile && (
           <nav className="lg:hidden flex-shrink-0 flex items-center border-t border-white/8 safe-bottom"
             style={{ background: 'rgba(8,13,26,0.97)', backdropFilter: 'blur(16px)' }}>

@@ -1,4 +1,4 @@
-// app/api/medicos/route.ts — Buscar médicos reais registados no HGU
+// app/api/medicos/route.ts-Buscar médicos reais registados no HGU
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db as getDb } from '@/lib/firebase-server'

@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "HGU AI Clínico",
-    "tagline": "Assistente de apoio ao diagnóstico — Hospital Geral do Uíge"
+    "tagline": "Assistente de apoio ao diagnóstico-Hospital Geral do Uíge"
   },
   "auth": {
     "login": "Entrar",
@@ -28,7 +28,7 @@
       "vermelho": "Emergência",
       "indefinido": "A avaliar"
     },
-    "disclaimer": "Este assistente apoia — não substitui — o julgamento clínico do profissional de saúde."
+    "disclaimer": "Este assistente apoia-não substitui-o julgamento clínico do profissional de saúde."
   },
   "form": {
     "patientCode": "Código do doente",

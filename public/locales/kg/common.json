@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "HGU AI Médico",
-    "tagline": "Nzailu ya buketo ya misaamu — Hospitale ya Wige"
+    "tagline": "Nzailu ya buketo ya misaamu-Hospitale ya Wige"
   },
   "auth": {
     "login": "Kota",
@@ -28,7 +28,7 @@
       "vermelho": "Emergencia",
       "indefinido": "Tala ntangu"
     },
-    "disclaimer": "Nzailu yai yandi na mukitisi — ko yandi na solo ya médico."
+    "disclaimer": "Nzailu yai yandi na mukitisi-ko yandi na solo ya médico."
   },
   "form": {
     "patientCode": "Nzina ya mpe",

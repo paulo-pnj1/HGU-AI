@@ -1,4 +1,4 @@
-// app/api/report/route.ts — Geração de relatório PDF
+// app/api/report/route.ts-Geração de relatório PDF
 
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarResumoConsulta } from '@/lib/grok'

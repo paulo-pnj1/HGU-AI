@@ -1,4 +1,4 @@
-// app/api/chat/route.ts — API Route para chat com Grok
+// app/api/chat/route.ts-API Route para chat com Grok
 
 import { NextRequest, NextResponse } from 'next/server'
 import { chatComGrok, analisarImagemClinica, GrokMessage } from '@/lib/grok'

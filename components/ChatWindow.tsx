@@ -431,7 +431,7 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
       {/* Aviso */}
       <div className="flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 border-b border-amber-500/10 bg-amber-500/5">
         <p className="text-xs text-amber-500/80 text-center">
-          Este assistente apoia — não substitui — o julgamento clínico.
+          Este assistente apoia-não substitui-o julgamento clínico.
         </p>
       </div>
 

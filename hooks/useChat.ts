@@ -1,4 +1,4 @@
-// hooks/useChat.ts — Hook para gestão do estado do chat
+// hooks/useChat.ts-Hook para gestão do estado do chat
 
 'use client'
 

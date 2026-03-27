@@ -1,4 +1,4 @@
-// lib/firebase-admin.ts — Firebase Admin SDK (servidor)
+// lib/firebase-admin.ts-Firebase Admin SDK (servidor)
 // Usado para operações seguras do lado do servidor (API Routes)
 
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app'
@@ -30,7 +30,7 @@ function getAdminApp(): App {
   })
 }
 
-// ─── Exports lazy — só inicializam quando chamados ───────────────
+// ─── Exports lazy-só inicializam quando chamados ───────────────
 // IMPORTANTE: não executar getAdminApp() no nível do módulo,
 // senão o Next.js inicializa o Firebase durante o build.
 

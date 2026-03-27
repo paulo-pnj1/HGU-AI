@@ -1,5 +1,5 @@
 'use client'
-// components/ProfissionaisView.tsx — CRUD de Profissionais (Admin)
+// components/ProfissionaisView.tsx-CRUD de Profissionais (Admin)
 
 import { useState, useEffect, useCallback } from 'react'
 import {

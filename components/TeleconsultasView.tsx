@@ -74,7 +74,7 @@ function DetailModal({ tc, onClose, onMarcarRevisada }: { tc: Teleconsulta; onCl
           {tc.gravidez && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-pink-500/30 bg-pink-500/10">
               <Baby size={14} className="text-pink-400 flex-shrink-0" />
-              <p className="text-pink-300 text-sm font-medium">Grávida{tc.semanasGestacao ? ` — ${tc.semanasGestacao} semanas` : ''}</p>
+              <p className="text-pink-300 text-sm font-medium">Grávida{tc.semanasGestacao ? `-${tc.semanasGestacao} semanas` : ''}</p>
             </div>
           )}
           {tc.suspectedDiseases.length > 0 && (

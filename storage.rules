@@ -1,4 +1,4 @@
-// storage.rules — Regras de segurança do Firebase Storage
+// storage.rules-Regras de segurança do Firebase Storage
 
 rules_version = '2';
 service firebase.storage {
@@ -18,7 +18,7 @@ service firebase.storage {
       allow delete: if false; // Imagens clínicas não podem ser eliminadas
     }
 
-    // ── Tudo o resto — bloqueado ───────────────────────────────
+    // ── Tudo o resto-bloqueado ───────────────────────────────
     match /{allPaths=**} {
       allow read, write: if false;
     }

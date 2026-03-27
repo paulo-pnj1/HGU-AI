@@ -1,4 +1,4 @@
-// public/sw.js — Service Worker HGU AI Clínico
+// public/sw.js-Service Worker HGU AI Clínico
 const CACHE = 'hgu-v3'
 const STATIC = [
   '/',
@@ -39,7 +39,7 @@ self.addEventListener('fetch', e => {
   // Ignorar métodos que não sejam GET
   if (e.request.method !== 'GET') return
 
-  // Ignorar rotas de API — sempre vão à rede
+  // Ignorar rotas de API-sempre vão à rede
   if (url.pathname.startsWith('/api/')) return
 
   // Ignorar serviços externos (Firebase, Google)

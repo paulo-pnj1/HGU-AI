@@ -1,4 +1,4 @@
-// firestore.rules — Regras de segurança do Firestore
+// firestore.rules-Regras de segurança do Firestore
 
 rules_version = '2';
 service cloud.firestore {
@@ -25,14 +25,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ── Teleconsultas (remotas — acesso público via servidor) ──
+    // ── Teleconsultas (remotas-acesso público via servidor) ──
     // Criação e leitura feitas APENAS via Firebase Admin SDK no servidor.
     // O cliente nunca acede directamente a esta colecção.
     match /teleconsultas/{tcId} {
       allow read, write: if false; // Acesso exclusivo via Admin SDK
     }
 
-    // ── Tudo o resto — bloqueado ───────────────────────────────
+    // ── Tudo o resto-bloqueado ───────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

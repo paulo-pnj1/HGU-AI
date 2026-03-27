@@ -1,7 +1,7 @@
 {
   "name": "HGU AI Clínico",
   "short_name": "HGU AI",
-  "description": "Sistema de apoio ao diagnóstico — Hospital Geral do Uíge, Angola",
+  "description": "Sistema de apoio ao diagnóstico-Hospital Geral do Uíge, Angola",
   "start_url": "/teleconsulta",
   "scope": "/",
   "display": "standalone",

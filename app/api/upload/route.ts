@@ -1,4 +1,4 @@
-// app/api/upload/route.ts — Upload de imagens clínicas para Firebase Storage (Admin SDK)
+// app/api/upload/route.ts-Upload de imagens clínicas para Firebase Storage (Admin SDK)
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminStorage } from '@/lib/firebase-admin'

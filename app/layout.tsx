@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'HGU AI Clínico',
-  description: 'Sistema de apoio ao diagnóstico — Hospital Geral do Uíge, Angola',
+  description: 'Sistema de apoio ao diagnóstico-Hospital Geral do Uíge, Angola',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

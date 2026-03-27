@@ -1,4 +1,4 @@
-// app/api/teleconsulta/route.ts — API para teleconsulta pública de pacientes
+// app/api/teleconsulta/route.ts-API para teleconsulta pública de pacientes
 
 import { NextRequest, NextResponse } from 'next/server'
 import { chatComGrok, GrokMessage } from '@/lib/grok'
@@ -57,14 +57,14 @@ Dados do paciente:
 - Município: ${mun}
 
 REGRAS IMPORTANTES:
-1. Use linguagem SIMPLES e CLARA — o paciente não é médico.
+1. Use linguagem SIMPLES e CLARA-o paciente não é médico.
 2. Seja empático, calmo e tranquilizador.
 3. Faça UMA pergunta de cada vez sobre sintomas.
 4. Avalie os sintomas considerando doenças prevalentes em Angola: paludismo, tuberculose, diarreia aguda, infeções respiratórias, saúde materna.
 5. No final de cada resposta, classifique a urgência com um destes marcadores EXATOS no JSON:
-   {"urgency":"verde","diseases":[]} — não urgente
-   {"urgency":"amarelo","diseases":["paludismo"]} — urgente
-   {"urgency":"vermelho","diseases":["tuberculose"]} — emergência
+   {"urgency":"verde","diseases":[]}-não urgente
+   {"urgency":"amarelo","diseases":["paludismo"]}-urgente
+   {"urgency":"vermelho","diseases":["tuberculose"]}-emergência
 6. Se houver risco de vida (sinais de malária grave, hemorragia, dificuldade respiratória grave), diga CLARAMENTE para ir ao hospital/ligar 112.
 7. Nunca prescreva medicamentos específicos com dosagens. Pode mencionar o nome genérico.
 8. Termine sempre com uma instrução clara sobre o que fazer.`
@@ -81,14 +81,14 @@ Bilumbu bya muntu:
 - Ndako: ${mun}
 
 MAMBU MAKULU:
-1. Sadila maloba MAMPASI — muntu ko ya ngangu ya moyo.
+1. Sadila maloba MAMPASI-muntu ko ya ngangu ya moyo.
 2. Keba na lusungi, kisusu.
 3. Banza MOSI ya luzailu ya masumu.
 4. Keba masumu ya mbandu ya Angola: paludismo, tuberculose, masana, mpasi ya kuvemuka, moyo ya nkento.
 5. Na nsuka ya diaka, bimba urgência mu JSON:
-   {"urgency":"verde","diseases":[]} — ko ya nsiku
-   {"urgency":"amarelo","diseases":["paludismo"]} — ya nsiku
-   {"urgency":"vermelho","diseases":["tuberculose"]} — nsusu
+   {"urgency":"verde","diseases":[]}-ko ya nsiku
+   {"urgency":"amarelo","diseases":["paludismo"]}-ya nsiku
+   {"urgency":"vermelho","diseases":["tuberculose"]}-nsusu
 6. Soki moyo mu nsusu, yeba kwa nenda ku hospitalu/benga 112.
 7. Ko sala ndele ya ndelo ya nzambi. Wenda longuka nkombo ya kilabo.`
 }

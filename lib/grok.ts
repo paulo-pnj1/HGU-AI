@@ -227,15 +227,22 @@ export async function gerarResumoConsulta(
 ): Promise<string> {
   const prompt =
     language === 'pt'
-      ? `Com base na conversa clínica acima, gera um resumo estruturado em formato de relatório médico com:
-         1. Queixa principal
-         2. Sintomas identificados
-         3. Hipóteses diagnósticas (por ordem de probabilidade)
-         4. Nível de urgência e justificação
-         5. Recomendações e próximos passos
-         6. Exames sugeridos (disponíveis no contexto do Uíge)
-         
-         Sê conciso e usa linguagem clínica profissional.`
+      ? `Com base na conversa clínica acima, redige um relatório médico estruturado e profissional com as seguintes secções:
+
+1. Queixa Principal
+2. Sintomas Identificados
+3. Hipóteses Diagnósticas (por ordem de probabilidade)
+4. Nível de Urgência e Justificação Clínica
+5. Recomendações e Próximos Passos
+6. Exames Complementares Sugeridos (disponíveis no contexto do Uíge)
+
+Regras obrigatórias:
+- Usa linguagem clínica formal e profissional, como num relatório médico oficial
+- NÃO uses asteriscos, negrito, itálico, markdown ou qualquer formatação especial
+- NÃO incluas blocos JSON, código ou dados técnicos de qualquer tipo
+- NÃO uses expressões como "a IA", "o modelo", "com base nos dados fornecidos" ou similares
+- Escreve em texto corrido, com frases completas e numeração simples (1., 2., etc.)
+- Sê conciso, objectivo e clínico`
       : `Sala résumé ya médico ya ntalu yai...`
 
   const completion = await groq.chat.completions.create({
@@ -246,8 +253,20 @@ export async function gerarResumoConsulta(
       { role: 'user', content: prompt },
     ],
     temperature: 0.2,
-    max_tokens: 800,
+    max_tokens: 900,
   })
 
-  return completion.choices[0]?.message?.content ?? ''
+  const raw = completion.choices[0]?.message?.content ?? ''
+
+  // Limpeza de segurança: remove markdown e JSON mesmo que o modelo ignore as instruções
+  const limpo = raw
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/\{[\s\S]*?"urgency"[\s\S]*?\}/g, '')
+    .replace(/\*{1,3}([^*\n]+)\*{1,3}/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*JSON\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+  return limpo
 }

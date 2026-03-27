@@ -1,6 +1,6 @@
 // app/api/teleconsulta/paciente/route.ts
-// GET  ?nome=XYZ  — listar teleconsultas do paciente
-// DELETE ?id=XYZ  — eliminar teleconsulta
+// GET  ?nome=XYZ -listar teleconsultas do paciente
+// DELETE ?id=XYZ -eliminar teleconsulta
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db as getDb } from '@/lib/firebase-server'
