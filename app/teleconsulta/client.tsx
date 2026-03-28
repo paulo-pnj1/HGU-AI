@@ -773,12 +773,15 @@ function InstallModal({ onClose, onInstall, canInstall }: {
 
         {isIOS && (
           <div className="p-3 rounded-xl border border-blue-500/20 bg-blue-500/5">
-            <p className="text-blue-300 text-xs font-medium mb-2">📱 No iPhone / iPad:</p>
+            <p className="text-blue-300 text-xs font-medium mb-2">📱 No iPhone / iPad (Safari):</p>
             <ol className="text-slate-400 text-xs space-y-1 list-decimal list-inside">
               <li>Toque em <span className="text-white font-medium">Partilhar</span> <span className="text-slate-500">(ícone de caixa com seta ↑)</span></li>
               <li>Role e toque em <span className="text-white font-medium">"Adicionar ao ecrã de início"</span></li>
               <li>Confirme tocando em <span className="text-white font-medium">Adicionar</span></li>
             </ol>
+            <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-amber-300 text-xs">🔔 Após instalar, abra a app pelo ecrã inicial para activar as notificações push.</p>
+            </div>
           </div>
         )}
 
@@ -1628,15 +1631,35 @@ export default function TeleconsultaPageClient() {
     if (Notification.permission === 'denied') return
 
     // Evitar múltiplas subscrições na mesma sessão
-    const jaSubscreuKey = `push_subscrito_${savedCode}`
-    if (sessionStorage.getItem(jaSubscreuKey)) return
-    sessionStorage.setItem(jaSubscreuKey, '1')
+    // Usar localStorage como fallback se sessionStorage estiver bloqueado (Edge)
+    let jaSubscreuKey = `push_subscrito_${savedCode}`
+    try {
+      if (sessionStorage.getItem(jaSubscreuKey)) return
+      sessionStorage.setItem(jaSubscreuKey, '1')
+    } catch {
+      try {
+        if (localStorage.getItem(jaSubscreuKey)) return
+        localStorage.setItem(jaSubscreuKey, '1')
+      } catch { /* storage bloqueado — continuar na mesma */ }
+    }
 
     const subscrever = async () => {
       try {
         const reg = await navigator.serviceWorker.ready
         const existente = await reg.pushManager.getSubscription()
-        if (existente) return // já subscrito
+        if (existente) {
+          // Já subscrito — garantir que está guardado no servidor
+          await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              patientCode: savedCode,
+              patientName: profile.nome,
+              subscription: existente.toJSON(),
+            }),
+          }).catch(() => {})
+          return
+        }
 
         if (Notification.permission !== 'granted') {
           const perm = await Notification.requestPermission()

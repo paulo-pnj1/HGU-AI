@@ -9,10 +9,18 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['jspdf', 'jspdf-autotable', 'firebase-admin'],
   },
-  // Headers para garantir que manifest e ícones são servidos correctamente
-  // mesmo em localhost (HTTP), sem problemas de cache ou MIME type
   async headers() {
     return [
+      {
+        // Cabeçalhos globais para todas as páginas — compatibilidade multi-browser
+        source: '/(.*)',
+        headers: [
+          // Permite storage em Edge com Tracking Prevention
+          { key: 'Permissions-Policy', value: 'storage-access=*' },
+          // Permite notificações push em todos os browsers
+          { key: 'Permissions-Policy', value: 'notifications=*' },
+        ],
+      },
       {
         source: '/manifest.json',
         headers: [
@@ -32,9 +40,9 @@ const nextConfig = {
       {
         source: '/sw.js',
         headers: [
-          { key: 'Content-Type',  value: 'application/javascript' },
-          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
-          { key: 'Service-Worker-Allowed', value: '/' },
+          { key: 'Content-Type',               value: 'application/javascript' },
+          { key: 'Cache-Control',              value: 'public, max-age=0, must-revalidate' },
+          { key: 'Service-Worker-Allowed',     value: '/' },
         ],
       },
     ]

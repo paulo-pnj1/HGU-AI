@@ -1,5 +1,5 @@
 // public/sw.js — Service Worker HGU AI Clínico
-const CACHE = 'hgu-v3'
+const CACHE = 'hgu-v4'
 const STATIC = [
   '/',
   '/teleconsulta',
@@ -9,7 +9,6 @@ const STATIC = [
   '/icons/icon-512.png',
 ]
 
-// ── Instalar ──
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
@@ -18,7 +17,6 @@ self.addEventListener('install', e => {
   )
 })
 
-// ── Activar ──
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -29,7 +27,6 @@ self.addEventListener('activate', e => {
   )
 })
 
-// ── Fetch ──
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
   if (!url.protocol.startsWith('http')) return
@@ -56,29 +53,35 @@ self.addEventListener('fetch', e => {
 
 // ── Push Notifications ──
 self.addEventListener('push', e => {
-  let data = { titulo: 'HGU AI Clínico', corpo: 'A sua teleconsulta foi revista.', dados: {} }
+  let titulo = 'HGU AI Clínico'
+  let corpo  = 'A sua teleconsulta foi revista pelo especialista.'
+  let dados  = {}
 
   try {
-    const parsed = e.data?.json()
-    if (parsed) data = { ...data, ...parsed }
-  } catch {}
-
-  const options = {
-    body: data.corpo,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
-    vibrate: [200, 100, 200],
-    tag: 'teleconsulta-revisada',
-    renotify: true,
-    data: data.dados,
-    actions: [
-      { action: 'ver', title: '👁️ Ver consulta' },
-      { action: 'fechar', title: 'Fechar' },
-    ],
+    if (e.data) {
+      const parsed = e.data.json()
+      titulo = parsed.titulo || titulo
+      corpo  = parsed.corpo  || corpo
+      dados  = parsed.dados  || {}
+    }
+  } catch {
+    try { corpo = e.data?.text() || corpo } catch {}
   }
 
   e.waitUntil(
-    self.registration.showNotification(data.titulo, options)
+    self.registration.showNotification(titulo, {
+      body:     corpo,
+      icon:     '/icons/icon-192.png',
+      badge:    '/icons/icon-192.png',
+      vibrate:  [200, 100, 200],
+      tag:      'teleconsulta-revisada',
+      renotify: true,
+      data:     { url: '/teleconsulta', ...dados },
+      actions: [
+        { action: 'ver',    title: '👁️ Ver consulta' },
+        { action: 'fechar', title: 'Fechar' },
+      ],
+    })
   )
 })
 
@@ -88,16 +91,25 @@ self.addEventListener('notificationclick', e => {
 
   if (e.action === 'fechar') return
 
+  const targetUrl = (e.notification.data?.url) || '/teleconsulta'
+
   e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      // Se já há uma janela aberta, focar nela
-      for (const client of clientList) {
-        if (client.url.includes('/teleconsulta') && 'focus' in client) {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      // Procurar janela já aberta com a URL correcta
+      for (const client of list) {
+        if (client.url.includes(targetUrl) && 'focus' in client) {
           return client.focus()
         }
       }
-      // Senão abrir nova janela
-      return clients.openWindow('/teleconsulta')
+      // Procurar qualquer janela aberta do site e navegar
+      for (const client of list) {
+        if ('navigate' in client && 'focus' in client) {
+          client.focus()
+          return client.navigate(targetUrl)
+        }
+      }
+      // Abrir nova janela se não houver nenhuma
+      return clients.openWindow(targetUrl)
     })
   )
 })
