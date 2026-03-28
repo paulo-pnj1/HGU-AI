@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { id, profissionalId, notaEspecialista, encaminharPresencial } = await req.json()
+    const { id, profissionalId, notaEspecialista, encaminharPresencial, reenviarPush } = await req.json()
     if (!id) return NextResponse.json({ error: 'id obrigatório' }, { status: 400 })
 
     const adminDb = getDb()
@@ -109,7 +109,9 @@ export async function PATCH(req: NextRequest) {
         if (!subsSnap.empty) subscription = subsSnap.docs[0].data()?.subscription
       }
 
-      if (subscription) {
+      // Enviar push em revisões novas ou quando o especialista reenvia explicitamente
+      const deveEnviarPush = !update.status || reenviarPush
+      if (subscription && deveEnviarPush) {
         const temNota       = !!(notaEspecialista?.trim())
         const temEncaminhar = !!encaminharPresencial
         const corpo = temEncaminhar

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Wifi, Search, RefreshCw, CheckCircle, Clock, AlertTriangle, Activity, MapPin, MessageSquare, User, Phone, X, FileText, Eye, UserCheck, Calendar, Baby, LogIn, Building2, Send } from 'lucide-react'
+import { Wifi, Search, RefreshCw, CheckCircle, Clock, AlertTriangle, Activity, MapPin, MessageSquare, User, Phone, X, FileText, Eye, UserCheck, Calendar, Baby, LogIn, Building2, Send, Edit3 } from 'lucide-react'
 import { UrgencyLevel } from '@/types'
 import { format } from 'date-fns'
 import { pt as ptLocale } from 'date-fns/locale'
@@ -32,15 +32,36 @@ function UBadge({ u }: { u: UrgencyLevel }) {
 }
 
 function DetailModal({ tc, onClose, onMarcarRevisada }: { tc: Teleconsulta; onClose: () => void; onMarcarRevisada: (id: string, nota: string, encaminhar: boolean) => Promise<void> }) {
-  const [marking,    setMarking]    = useState(false)
-  const [nota,       setNota]       = useState('')
-  const [encaminhar, setEncaminhar] = useState(false)
+  const [marking,      setMarking]      = useState(false)
+  const [nota,         setNota]         = useState('')
+  const [encaminhar,   setEncaminhar]   = useState(false)
+  const [editando,     setEditando]     = useState(false)
+  const [notaEditada,  setNotaEditada]  = useState(tc.notaEspecialista || '')
+  const [salvandoEdit, setSalvandoEdit] = useState(false)
   const data = tc.createdAt?.toDate?.() || new Date()
   const handleMarcar = async () => {
     setMarking(true)
     await onMarcarRevisada(tc.id, nota, encaminhar)
     setMarking(false)
     onClose()
+  }
+  const handleGuardarEdicao = async () => {
+    setSalvandoEdit(true)
+    try {
+      await fetch('/api/teleconsulta/lista', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: tc.id,
+          notaEspecialista: notaEditada,
+          encaminharPresencial: tc.encaminharPresencial,
+          reenviarPush: true,
+        })
+      })
+      tc.notaEspecialista = notaEditada
+      setEditando(false)
+    } catch {}
+    setSalvandoEdit(false)
   }
 
   return (
@@ -136,13 +157,36 @@ function DetailModal({ tc, onClose, onMarcarRevisada }: { tc: Teleconsulta; onCl
           </div>
         )}
 
-        {/* Nota já registada — consultas já revisadas */}
-        {tc.status === 'revisada' && tc.notaEspecialista && (
+        {/* Nota já registada — editável */}
+        {tc.status === 'revisada' && (
           <div className="flex-shrink-0 px-4 sm:px-5 pt-3 pb-2 border-t border-white/5 space-y-2">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-violet-400"><UserCheck size={11} /> Nota do especialista</p>
-            <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
-              <p className="text-violet-100 text-xs leading-relaxed">{tc.notaEspecialista}</p>
+            <div className="flex items-center justify-between">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-violet-400">
+                <UserCheck size={11} /> Nota do especialista
+              </p>
+              <button onClick={() => setEditando(!editando)}
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg hover:bg-white/5 transition-all">
+                <Edit3 size={11} /> {editando ? 'Cancelar' : 'Editar'}
+              </button>
             </div>
+            {editando ? (
+              <div className="space-y-2">
+                <textarea value={notaEditada} onChange={e => setNotaEditada(e.target.value)} rows={4}
+                  className="w-full px-3 py-2 bg-white/5 border border-violet-500/30 rounded-xl text-white text-xs placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-none" />
+                <button onClick={handleGuardarEdicao} disabled={salvandoEdit}
+                  className="w-full py-2 rounded-xl text-white text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
+                  {salvandoEdit ? <Activity size={13} className="animate-spin" /> : <Send size={13} />}
+                  {salvandoEdit ? 'A guardar...' : 'Guardar e reenviar ao paciente'}
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                <p className="text-violet-100 text-xs leading-relaxed">
+                  {tc.notaEspecialista || <span className="text-slate-500 italic">Sem nota registada</span>}
+                </p>
+              </div>
+            )}
             {tc.encaminharPresencial && (
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <Building2 size={13} className="text-amber-400 flex-shrink-0" />
@@ -182,7 +226,11 @@ export default function TeleconsultasView({ currentUserId }: { currentUserId: st
     catch {} finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
+  }, [load])
 
   const handleMarcarRevisada = async (id: string, nota: string, encaminhar: boolean) => {
     await fetch('/api/teleconsulta/lista', {
@@ -217,6 +265,21 @@ export default function TeleconsultasView({ currentUserId }: { currentUserId: st
               <h1 className="text-lg sm:text-xl font-bold text-white">Teleconsultas</h1>
             </div>
             <p className="text-slate-400 text-xs sm:text-sm">{lista.length} consultas remotas</p>
+          </div>
+          {/* Stats */}
+          <div className="flex items-center gap-2 mt-2 sm:mt-0">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
+              <span className="text-violet-300 text-xs font-bold">{counts.activa}</span>
+              <span className="text-slate-500 text-xs">activas</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-emerald-300 text-xs font-bold">{counts.revisada}</span>
+              <span className="text-slate-500 text-xs">revistas</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20">
+              <span className="text-red-300 text-xs font-bold">{counts.vermelho}</span>
+              <span className="text-slate-500 text-xs">emerg.</span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button

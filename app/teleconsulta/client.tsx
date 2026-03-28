@@ -9,7 +9,7 @@ import {
   FileText, Phone, X, ArrowLeft, Wifi, Shield,
   MessageSquare, History, Plus, Trash2, Edit3,
   Menu, Home, Settings, LogOut, Baby, RefreshCw,
-  Eye, ChevronDown, ChevronUp, ImageIcon, Download, Smartphone, UserCheck
+  Eye, ChevronDown, ChevronUp, ImageIcon, Download, Smartphone, UserCheck, Bell, Building2
 } from 'lucide-react'
 import { MUNICIPIOS_UIGE, Language, UrgencyLevel, Municipio } from '@/types'
 
@@ -73,7 +73,7 @@ interface Teleconsulta {
   encaminharPresencial?: boolean
 }
 
-type View = 'home' | 'nova' | 'consultas' | 'detalhe' | 'chat' | 'perfil'
+type View = 'home' | 'nova' | 'consultas' | 'detalhe' | 'chat' | 'perfil' | 'notificacoes'
 
 const URGENCY_CFG = {
   verde:      { label: 'Não urgente', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', dot: 'bg-emerald-400', Icon: CheckCircle },
@@ -171,6 +171,7 @@ function Sidebar({ view, setView, profile, menuOpen, setMenuOpen, onLogout }: {
     { id: 'home' as View,      icon: Home,        label: 'Início' },
     { id: 'nova' as View,      icon: Plus,        label: 'Nova Consulta' },
     { id: 'consultas' as View, icon: History,     label: 'Minhas Consultas' },
+    { id: 'notificacoes' as View, icon: Bell,     label: 'Notificações' },
     { id: 'perfil' as View,    icon: Settings,    label: 'Meu Perfil' },
   ]
 
@@ -1064,6 +1065,93 @@ function ProfileForm({ initial, onSave, title, subtitle, onBack }: {
 }
 
 // ─── Lista de Consultas (CRUD) ─────────────────────────────────────
+
+// ─── Painel de Notificações do Paciente ───────────────────────────
+function NotificacoesView({ profile, onDetalhe, onChat }: { profile: PatientProfile; onDetalhe: (tc: Teleconsulta) => void; onChat: (tc: Teleconsulta) => void }) {
+  const [lista,   setLista]   = useState<Teleconsulta[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    try {
+      const res  = await fetch(`/api/teleconsulta/paciente?nome=${encodeURIComponent(profile.nome)}`)
+      const json = await res.json()
+      const revisadas = (json.teleconsultas || []).filter((t: any) => t.status === 'revisada')
+      setLista(revisadas)
+    } catch {}
+    finally { setLoading(false) }
+  }, [profile.nome])
+
+  useEffect(() => {
+    load()
+    // Polling a cada 30 segundos para actualização em tempo real
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
+  }, [load])
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 size={28} className="text-violet-400 animate-spin" />
+    </div>
+  )
+
+  return (
+    <div className="px-3 py-3 space-y-3 max-w-lg mx-auto w-full">
+      <div className="flex items-center gap-2 mb-2">
+        <Bell size={16} className="text-violet-400" />
+        <p className="text-white font-semibold text-sm">Notificações</p>
+        {lista.length > 0 && (
+          <span className="px-2 py-0.5 rounded-full text-xs bg-violet-500/20 text-violet-300 border border-violet-500/30">
+            {lista.length}
+          </span>
+        )}
+      </div>
+
+      {lista.length === 0 ? (
+        <div className="text-center py-16 px-6">
+          <Bell size={40} className="mx-auto mb-4 text-slate-600" />
+          <p className="text-white font-semibold mb-1">Sem notificações</p>
+          <p className="text-slate-400 text-sm">Quando uma consulta for revista, aparecerá aqui.</p>
+        </div>
+      ) : (
+        lista.map(tc => (
+          <div key={tc.id}
+            className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 cursor-pointer hover:bg-emerald-500/10 transition-all active:scale-[0.99]"
+            onClick={() => onDetalhe(tc)}>
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}>
+                <UserCheck size={16} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-emerald-300 text-sm font-semibold">Consulta revista pelo especialista</p>
+                  <ChevronRight size={14} className="text-slate-500 flex-shrink-0" />
+                </div>
+                <p className="text-slate-400 text-xs mb-2">
+                  {toDate(tc.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  {' · '}{tc.patientCode}
+                </p>
+                {tc.notaEspecialista && (
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 mb-2">
+                    <p className="text-xs text-slate-400 mb-1">👨‍⚕️ Nota do especialista:</p>
+                    <p className="text-slate-200 text-xs leading-relaxed line-clamp-2">{tc.notaEspecialista}</p>
+                  </div>
+                )}
+                {tc.encaminharPresencial && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <Building2 size={13} className="text-amber-400 flex-shrink-0" />
+                    <p className="text-amber-300 text-xs font-medium">Recomenda consulta presencial no HGU</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
 function ConsultasList({ profile, onChat, onDetalhe }: {
   profile: PatientProfile
   onChat: (tc: Teleconsulta) => void
@@ -1083,7 +1171,11 @@ function ConsultasList({ profile, onChat, onDetalhe }: {
     finally { setLoading(false) }
   }, [profile.nome])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
+  }, [load])
 
   const handleDelete = async (id: string) => {
     if (!confirm('Eliminar esta consulta? Esta acção não pode ser desfeita.')) return
@@ -1721,8 +1813,10 @@ export default function TeleconsultaPageClient() {
     setView('chat')
   }
 
-  const goDetalhe = (tc: Teleconsulta) => {
+  const [detalheOrigin, setDetalheOrigin] = useState<View>('consultas')
+  const goDetalhe = (tc: Teleconsulta, origin: View = 'consultas') => {
     setSelectedTc(tc)
+    setDetalheOrigin(origin)
     setView('detalhe')
   }
 
@@ -1757,10 +1851,14 @@ export default function TeleconsultaPageClient() {
         ) : null
       case 'detalhe':
         return selectedTc ? (
-          <DetalheConsulta tc={selectedTc} onBack={() => setView('consultas')} onChat={goChat} />
+          <DetalheConsulta tc={selectedTc} onBack={() => setView(detalheOrigin)} onChat={goChat} />
         ) : null
       case 'chat':
         return <ChatScreen profile={profile!} tcExistente={selectedTc || undefined} setView={setView} />
+      case 'notificacoes':
+        return profile ? (
+          <NotificacoesView profile={profile} onDetalhe={(tc) => goDetalhe(tc, 'notificacoes')} onChat={goChat} />
+        ) : null
       case 'perfil':
         return profile ? (
           <EditProfileForm
@@ -1784,6 +1882,7 @@ export default function TeleconsultaPageClient() {
     detalhe:   'Detalhe da Consulta',
     chat:      'Chat',
     perfil:    'Meu Perfil',
+    notificacoes: 'Notificações',
   }
 
   return (
@@ -1863,6 +1962,7 @@ export default function TeleconsultaPageClient() {
               { id: 'home' as View,      icon: Home,        label: 'Início' },
               { id: 'nova' as View,      icon: Plus,        label: 'Consulta' },
               { id: 'consultas' as View, icon: History,     label: 'Histórico' },
+              { id: 'notificacoes' as View, icon: Bell,     label: 'Avisos' },
               { id: 'perfil' as View,    icon: Settings,    label: 'Perfil' },
             ].map(item => {
               const Icon = item.icon
