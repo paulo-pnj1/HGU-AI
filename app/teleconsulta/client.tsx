@@ -9,7 +9,8 @@ import {
   FileText, Phone, X, ArrowLeft, Wifi, Shield,
   MessageSquare, History, Plus, Trash2, Edit3,
   Menu, Home, Settings, LogOut, Baby, RefreshCw,
-  Eye, ChevronDown, ChevronUp, ImageIcon, Download, Smartphone, UserCheck, Bell, Building2
+  Eye, ChevronDown, ChevronUp, ImageIcon, Download, Smartphone, UserCheck, Bell, Building2,
+  Mic, MicOff
 } from 'lucide-react'
 import { MUNICIPIOS_UIGE, Language, UrgencyLevel, Municipio } from '@/types'
 
@@ -1395,6 +1396,22 @@ function DetalheConsulta({ tc, onBack, onChat }: {
   )
 }
 
+// ─── Sintomas rápidos Kikongo ─────────────────────────────────────
+const SINTOMAS_KIKONGO = [
+  { kg: 'Ntima ya ntu', pt: 'Dor de cabeça' },
+  { kg: 'Ntima ya vumu', pt: 'Dor de barriga' },
+  { kg: 'Mbevo', pt: 'Febre' },
+  { kg: 'Kinsukusuku', pt: 'Tosse' },
+  { kg: 'Luvunu', pt: 'Vómitos' },
+  { kg: 'Ntima ya ntolo', pt: 'Dor no peito' },
+  { kg: 'Mpasi ya nitu', pt: 'Cansaço / fraqueza' },
+  { kg: 'Ntima ya makalu', pt: 'Dores nas pernas' },
+  { kg: 'Kubangula', pt: 'Tontura / vertigem' },
+  { kg: 'Ntima ya moyo', pt: 'Palpitações' },
+  { kg: 'Kubokama', pt: 'Dificuldade a respirar' },
+  { kg: 'Nzunga', pt: 'Diarreia' },
+]
+
 // ─── Chat ─────────────────────────────────────────────────────────
 function ChatScreen({ profile, tcExistente, setView }: {
   profile: PatientProfile
@@ -1418,6 +1435,34 @@ function ChatScreen({ profile, tcExistente, setView }: {
   const [imageContext, setImageContext] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  // ── Estado de reconhecimento de voz ──
+  const [isRecording,   setIsRecording]   = useState(false)
+  const [voiceSupport,  setVoiceSupport]  = useState(false)
+  const [interimText,   setInterimText]   = useState('')
+  const [showKikongo,   setShowKikongo]   = useState(false)
+  const [wordCount,     setWordCount]     = useState(0)
+  const recognitionRef  = useRef<any>(null)
+  const shouldRecordRef = useRef(false)
+
+  const isKikongo = profile.lang === 'kg'
+
+  // Verificar suporte Web Speech API
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    setVoiceSupport(!!SpeechRecognition)
+  }, [])
+  // Cleanup ao desmontar componente
+  useEffect(() => {
+    return () => {
+      shouldRecordRef.current = false
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop() } catch {}
+        recognitionRef.current = null
+      }
+    }
+  }, [])
+
 
   // Modo só leitura — consulta já foi revista pelo especialista
   const isRevisada = tcExistente?.status === 'revisada'
@@ -1462,6 +1507,94 @@ function ChatScreen({ profile, tcExistente, setView }: {
     finally { setStarting(false) }
   }
 
+  // ── Controlo do microfone ──────────────────────────────────────
+  const startRecording = () => {
+    if (!voiceSupport || isKikongo) return
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    const isEdge = /Edg\//.test(navigator.userAgent)
+    const langMap: Record<string, string> = {
+      pt: isEdge ? 'pt-PT' : 'pt-AO',
+      en: 'en-US', fr: 'fr-FR', es: 'es-ES',
+    }
+    const lang = langMap[profile.lang] || (isEdge ? 'pt-PT' : 'pt-AO')
+    shouldRecordRef.current = true
+
+    const buildAndStart = () => {
+      if (!shouldRecordRef.current) return
+      const recognition = new SR()
+      recognition.lang = lang
+      recognition.continuous = !isEdge
+      recognition.interimResults = true
+      recognition.maxAlternatives = 1
+
+      recognition.onresult = (e: any) => {
+        let interim = ''
+        let finalText = ''
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const transcript = e.results[i][0].transcript
+          if (e.results[i].isFinal) { finalText += transcript + ' ' }
+          else { interim += transcript }
+        }
+        if (finalText) {
+          setInput(prev => {
+            const updated = (prev + ' ' + finalText).trim()
+            setWordCount(updated.split(/[\s]+/).filter(Boolean).length)
+            return updated
+          })
+        }
+        setInterimText(interim)
+      }
+
+      recognition.onerror = (e: any) => {
+        setInterimText('')
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          shouldRecordRef.current = false
+          setIsRecording(false)
+        }
+      }
+
+      recognition.onend = () => {
+        setInterimText('')
+        recognitionRef.current = null
+        if (shouldRecordRef.current) {
+          setTimeout(buildAndStart, isEdge ? 400 : 200)
+        } else {
+          setIsRecording(false)
+        }
+      }
+
+      recognitionRef.current = recognition
+      try { recognition.start() } catch {}
+    }
+
+    buildAndStart()
+    setIsRecording(true)
+  }
+
+  const stopRecording = () => {
+    shouldRecordRef.current = false
+    setIsRecording(false)
+    setInterimText('')
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop() } catch {}
+      recognitionRef.current = null
+    }
+  }
+
+  const toggleRecording = () => {
+    if (isRecording) stopRecording()
+    else startRecording()
+  }
+
+  const insertKikongoSintoma = (sintoma: typeof SINTOMAS_KIKONGO[0]) => {
+    const texto = `${sintoma.kg} (${sintoma.pt})`
+    setInput(prev => {
+      const updated = prev ? prev + ' ' + texto : texto
+      setWordCount(updated.split(/\s+/).filter(Boolean).length)
+      return updated
+    })
+  }
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -1484,11 +1617,13 @@ function ChatScreen({ profile, tcExistente, setView }: {
   }
 
   const sendMessage = async () => {
-    if ((!input.trim() && !pendingImage) || loading || !consultaId) return
-    const txt = pendingImage ? (imageContext || 'Análise de imagem clínica') : input.trim()
+    if (isRecording) stopRecording()
+    const finalInput = (input + ' ' + interimText).trim()
+    if ((!finalInput && !pendingImage) || loading || !consultaId) return
+    const txt = pendingImage ? (imageContext || 'Análise de imagem clínica') : finalInput
     const userMsg: ChatMsg = { id: genId(), role: 'user', content: txt, timestamp: new Date(), imageUrl: pendingImage?.url }
     setMessages(prev => [...prev, userMsg])
-    setInput(''); setPendingImage(null); setImageContext('')
+    setInput(''); setPendingImage(null); setImageContext(''); setInterimText(''); setWordCount(0)
     setLoading(true)
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }))
@@ -1542,7 +1677,9 @@ function ChatScreen({ profile, tcExistente, setView }: {
             <p className="text-xs text-slate-400">{patientCode || '...'}</p>
           </div>
         </div>
-        <UrgBadge u={urgency} />
+        <div className="flex items-center gap-2">
+          <UrgBadge u={urgency} />
+        </div>
       </div>
 
       {/* Aviso */}
@@ -1551,6 +1688,24 @@ function ChatScreen({ profile, tcExistente, setView }: {
           ⚕️ Assistente de apoio — não substitui médico. Emergência: ligue 112.
         </p>
       </div>
+
+      {/* Painel Kikongo — atalhos de sintomas */}
+      {isKikongo && showKikongo && (
+        <div className="flex-shrink-0 border-b border-violet-500/20 bg-violet-500/5 px-3 py-2">
+          <p className="text-xs text-violet-300 font-medium mb-2">🌍 Sintomas em Kikongo — toque para inserir:</p>
+          <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+            {SINTOMAS_KIKONGO.map((s) => (
+              <button
+                key={s.kg}
+                onClick={() => insertKikongoSintoma(s)}
+                className="px-2.5 py-1 rounded-lg text-xs border border-violet-500/30 text-violet-200 hover:bg-violet-500/20 transition-all active:scale-95"
+                style={{ background: 'rgba(124,58,237,0.1)' }}>
+                {s.kg}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mensagens */}
       <div className="flex-1 overflow-y-auto px-3 py-2">
@@ -1601,6 +1756,16 @@ function ChatScreen({ profile, tcExistente, setView }: {
         </div>
       )}
 
+      {/* Texto interim (reconhecimento em curso) */}
+      {interimText && (
+        <div className="flex-shrink-0 px-4 pb-1">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-red-500/20 bg-red-500/5">
+            <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse flex-shrink-0" />
+            <p className="text-xs text-slate-400 italic truncate">{interimText}</p>
+          </div>
+        </div>
+      )}
+
       {/* Input — bloqueado se revisada */}
       {isRevisada ? (
         <div className="flex-shrink-0 border-t border-white/8" style={{ background: 'rgba(13,22,45,0.5)' }}>
@@ -1619,8 +1784,52 @@ function ChatScreen({ profile, tcExistente, setView }: {
           </div>
         </div>
       ) : (
-        <div className="flex-shrink-0 px-3 py-2 border-t border-white/8 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
-          <div className="flex gap-2 items-end">
+        <div className="flex-shrink-0 border-t border-white/8 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
+
+          {/* Barra de ferramentas de voz */}
+          <div className="flex items-center justify-between px-3 pt-2 pb-1">
+            <div className="flex items-center gap-2">
+              {/* Botão microfone */}
+              {!isKikongo && voiceSupport && (
+                <button
+                  onClick={toggleRecording}
+                  title={isRecording ? 'Parar gravação' : 'Falar sintomas'}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+                    isRecording
+                      ? 'border-red-500/60 bg-red-500/20 text-red-300 animate-pulse'
+                      : 'border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
+                  }`}>
+                  {isRecording ? <MicOff size={13} /> : <Mic size={13} />}
+                  {isRecording ? 'A gravar...' : 'Falar'}
+                </button>
+              )}
+
+              {/* Botão atalhos Kikongo */}
+              {isKikongo && (
+                <button
+                  onClick={() => setShowKikongo(!showKikongo)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+                    showKikongo
+                      ? 'border-violet-500/60 bg-violet-500/25 text-violet-200'
+                      : 'border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
+                  }`}>
+                  🌍 {showKikongo ? 'Fechar' : 'Sintomas Kikongo'}
+                </button>
+              )}
+
+              {!isKikongo && !voiceSupport && (
+                <span className="text-xs text-slate-600 italic">Use Chrome para activar voz</span>
+              )}
+            </div>
+
+            {/* Contador de palavras */}
+            {wordCount > 0 && (
+              <span className="text-xs text-slate-500">{wordCount} palavra{wordCount !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+
+          {/* Campo de texto + botões */}
+          <div className="flex gap-2 items-end px-3 pb-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -1636,12 +1845,35 @@ function ChatScreen({ profile, tcExistente, setView }: {
               }`}>
               <ImageIcon size={15} />
             </button>
-            <textarea value={input} onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-              placeholder="Descreva os seus sintomas..."
-              rows={1}
-              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40 max-h-32 placeholder:text-slate-600" />
-            <button onClick={sendMessage} disabled={(!input.trim() && !pendingImage) || loading}
+            <div className="flex-1 relative">
+              <textarea
+                value={input}
+                onChange={e => {
+                  setInput(e.target.value)
+                  setWordCount(e.target.value.split(/\s+/).filter(Boolean).length)
+                }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+                placeholder={
+                  isRecording
+                    ? 'A ouvir... fale os seus sintomas'
+                    : isKikongo
+                      ? 'Bakisa masamu yaku...' // "Escreva os seus sintomas" em Kikongo
+                      : 'Descreva os seus sintomas...'
+                }
+                rows={1}
+                className={`w-full px-3 py-2 bg-white/5 border rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 max-h-32 placeholder:text-slate-600 transition-all ${
+                  isRecording
+                    ? 'border-red-500/40 focus:ring-red-500/40'
+                    : 'border-white/10 focus:ring-violet-500/40'
+                }`}
+              />
+              {isRecording && (
+                <span className="absolute right-3 top-2 w-2 h-2 bg-red-400 rounded-full animate-pulse" />
+              )}
+            </div>
+            <button
+              onClick={sendMessage}
+              disabled={(!input.trim() && !interimText.trim() && !pendingImage) || loading}
               className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-30 transition-all self-end"
               style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
               <Send size={15} />
@@ -1649,7 +1881,6 @@ function ChatScreen({ profile, tcExistente, setView }: {
           </div>
         </div>
       )}
-
     </div>
   )
 }

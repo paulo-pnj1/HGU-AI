@@ -5,10 +5,27 @@ import ReactMarkdown from 'react-markdown'
 import {
   Send, FileText, AlertTriangle, CheckCircle, Clock,
   Loader2, X, ImageIcon, Globe, Stethoscope,
-  MapPin, RefreshCw, Phone, Mail, UserCheck, Building2
+  MapPin, RefreshCw, Phone, Mail, UserCheck, Building2,
+  Mic, MicOff
 } from 'lucide-react'
 import { Message, UrgencyLevel, Language, MUNICIPIOS_UIGE, Municipio, Consultation } from '@/types'
 import { criarConsulta } from '@/lib/firebase'
+
+// ─── Sintomas rápidos Kikongo ─────────────────────────────────────
+const SINTOMAS_KIKONGO = [
+  { kg: 'Ntima ya ntu', pt: 'Dor de cabeça' },
+  { kg: 'Ntima ya vumu', pt: 'Dor de barriga' },
+  { kg: 'Mbevo', pt: 'Febre' },
+  { kg: 'Kinsukusuku', pt: 'Tosse' },
+  { kg: 'Luvunu', pt: 'Vómitos' },
+  { kg: 'Ntima ya ntolo', pt: 'Dor no peito' },
+  { kg: 'Mpasi ya nitu', pt: 'Cansaço / fraqueza' },
+  { kg: 'Ntima ya makalu', pt: 'Dores nas pernas' },
+  { kg: 'Kubangula', pt: 'Tontura / vertigem' },
+  { kg: 'Ntima ya moyo', pt: 'Palpitações' },
+  { kg: 'Kubokama', pt: 'Dificuldade a respirar' },
+  { kg: 'Nzunga', pt: 'Diarreia' },
+]
 
 // ─── Tipos ────────────────────────────────────────────────────────
 interface MedicoInfo {
@@ -300,6 +317,34 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
   const [contactosMedicos,  setContactosMedicos]   = useState<{ visible: boolean; especialidade: string }>({ visible: false, especialidade: '' })
   const bottomRef = useRef<HTMLDivElement>(null)
 
+  // ── Estados de reconhecimento de voz ──────────────────────────
+  const [isRecording,   setIsRecording]   = useState(false)
+  const [voiceSupport,  setVoiceSupport]  = useState(false)
+  const [interimText,   setInterimText]   = useState('')
+  const [wordCount,     setWordCount]     = useState(0)
+  const [showKikongo,   setShowKikongo]   = useState(false)
+  const recognitionRef  = useRef<any>(null)
+  const shouldRecordRef = useRef(false)   // flag persistente: "utilizador quer gravar" 
+
+  const isKikongo = language === 'kg'
+
+  // Verificar suporte Web Speech API
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    setVoiceSupport(!!SR)
+  }, [])
+  // Cleanup ao desmontar componente
+  useEffect(() => {
+    return () => {
+      shouldRecordRef.current = false
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop() } catch {}
+        recognitionRef.current = null
+      }
+    }
+  }, [])
+
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
 
   useEffect(() => {
@@ -315,6 +360,88 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
       if (onClearResume) onClearResume()
     }
   }, [resumeConsulta])
+
+
+  // ── Controlo do microfone ──────────────────────────────────────
+  const startRecording = () => {
+    if (!voiceSupport || isKikongo) return
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    const isEdge = /Edg\//.test(navigator.userAgent)
+    const lang = isEdge ? 'pt-PT' : 'pt-AO'
+    shouldRecordRef.current = true
+
+    const buildAndStart = () => {
+      if (!shouldRecordRef.current) return
+      const recognition = new SR()
+      recognition.lang = lang
+      recognition.continuous = !isEdge
+      recognition.interimResults = true
+      recognition.maxAlternatives = 1
+
+      recognition.onresult = (e: any) => {
+        let interim = ''
+        let finalText = ''
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const transcript = e.results[i][0].transcript
+          if (e.results[i].isFinal) { finalText += transcript + ' ' }
+          else { interim += transcript }
+        }
+        if (finalText) {
+          setInput(prev => {
+            const updated = (prev + ' ' + finalText).trim()
+            setWordCount(updated.split(/[\s]+/).filter(Boolean).length)
+            return updated
+          })
+        }
+        setInterimText(interim)
+      }
+
+      recognition.onerror = (e: any) => {
+        setInterimText('')
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          shouldRecordRef.current = false
+          setIsRecording(false)
+        }
+      }
+
+      recognition.onend = () => {
+        setInterimText('')
+        recognitionRef.current = null
+        if (shouldRecordRef.current) {
+          setTimeout(buildAndStart, isEdge ? 400 : 200)
+        } else {
+          setIsRecording(false)
+        }
+      }
+
+      recognitionRef.current = recognition
+      try { recognition.start() } catch {}
+    }
+
+    buildAndStart()
+    setIsRecording(true)
+  }
+
+  const stopRecording = () => {
+    shouldRecordRef.current = false
+    setIsRecording(false)
+    setInterimText('')
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop() } catch {}
+      recognitionRef.current = null
+    }
+  }
+
+  const toggleRecording = () => { isRecording ? stopRecording() : startRecording() }
+
+  const insertKikongoSintoma = (s: typeof SINTOMAS_KIKONGO[0]) => {
+    const texto = `${s.kg} (${s.pt})`
+    setInput(prev => {
+      const updated = prev ? prev + ' ' + texto : texto
+      setWordCount(updated.split(/\s+/).filter(Boolean).length)
+      return updated
+    })
+  }
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -332,11 +459,13 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
   })
 
   const sendMessage = async () => {
-    if ((!input.trim() && !pendingImage) || loading || !consultaId) return
-    const userContent = pendingImage ? (imageContext || 'Análise de imagem clínica') : input.trim()
+    if (isRecording) stopRecording()
+    const finalInput = (input + ' ' + interimText).trim()
+    if ((!finalInput && !pendingImage) || loading || !consultaId) return
+    const userContent = pendingImage ? (imageContext || 'Análise de imagem clínica') : finalInput
     const userMsg: Message = { id: genId(), role: 'user', content: userContent, timestamp: new Date(), imageUrl: pendingImage?.url }
     setMessages(prev => [...prev, userMsg])
-    setInput(''); setPendingImage(null); setImageContext(''); setLoading(true)
+    setInput(''); setPendingImage(null); setImageContext(''); setInterimText(''); setWordCount(0); setLoading(true)
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }))
       const res = await fetch('/api/chat', {
@@ -492,9 +621,74 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
         </div>
       )}
 
+      {/* Painel Kikongo */}
+      {isKikongo && showKikongo && (
+        <div className="flex-shrink-0 border-t border-blue-500/20 bg-blue-500/5 px-3 py-2">
+          <p className="text-xs text-blue-300 font-medium mb-2">🌍 Sintomas em Kikongo — toque para inserir:</p>
+          <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+            {SINTOMAS_KIKONGO.map((s) => (
+              <button
+                key={s.kg}
+                onClick={() => insertKikongoSintoma(s)}
+                className="px-2.5 py-1 rounded-lg text-xs border border-blue-500/30 text-blue-200 hover:bg-blue-500/20 transition-all active:scale-95"
+                style={{ background: 'rgba(37,99,235,0.1)' }}>
+                {s.kg}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Texto interim */}
+      {interimText && (
+        <div className="flex-shrink-0 px-3 sm:px-4 pb-1">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-red-500/20 bg-red-500/5">
+            <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse flex-shrink-0" />
+            <p className="text-xs text-slate-400 italic truncate">{interimText}</p>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
-      <div className="flex-shrink-0 p-3 sm:p-4 pb-safe border-t border-white/5 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
-        <div className="flex gap-2">
+      <div className="flex-shrink-0 border-t border-white/5 safe-bottom" style={{ background: 'rgba(13,22,45,0.5)' }}>
+
+        {/* Barra de voz */}
+        <div className="flex items-center justify-between px-3 pt-2 pb-1">
+          <div className="flex items-center gap-2">
+            {!isKikongo && voiceSupport && (
+              <button
+                onClick={toggleRecording}
+                title={isRecording ? 'Parar gravação' : 'Falar sintomas'}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+                  isRecording
+                    ? 'border-red-500/60 bg-red-500/20 text-red-300 animate-pulse'
+                    : 'border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20'
+                }`}>
+                {isRecording ? <MicOff size={13} /> : <Mic size={13} />}
+                {isRecording ? 'A gravar...' : 'Falar'}
+              </button>
+            )}
+            {isKikongo && (
+              <button
+                onClick={() => setShowKikongo(!showKikongo)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+                  showKikongo
+                    ? 'border-blue-500/60 bg-blue-500/25 text-blue-200'
+                    : 'border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20'
+                }`}>
+                🌍 {showKikongo ? 'Fechar' : 'Sintomas Kikongo'}
+              </button>
+            )}
+            {!isKikongo && !voiceSupport && (
+              <span className="text-xs text-slate-600 italic">Use Chrome para activar voz</span>
+            )}
+          </div>
+          {wordCount > 0 && (
+            <span className="text-xs text-slate-500">{wordCount} palavra{wordCount !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+
+        <div className="flex gap-2 px-3 pb-3">
           <div {...getRootProps()}
             title="Carregar imagem clínica"
             className={`flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 self-end rounded-xl border flex items-center justify-center transition-all ${
@@ -503,19 +697,40 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
             <input {...getInputProps()} />
             <ImageIcon size={16} />
           </div>
-          <textarea value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-            placeholder="Descreva os sintomas ou faça uma pergunta..."
-            rows={3}
-            className="flex-1 px-3 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/40 max-h-40 placeholder:text-slate-600" />
-          <button onClick={sendMessage} disabled={(!input.trim() && !pendingImage) || loading}
+          <div className="flex-1 relative">
+            <textarea
+              value={input}
+              onChange={e => {
+                setInput(e.target.value)
+                setWordCount(e.target.value.split(/\s+/).filter(Boolean).length)
+              }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+              placeholder={
+                isRecording
+                  ? 'A ouvir... descreva os sintomas'
+                  : isKikongo
+                    ? 'Bakisa masamu yaku...'
+                    : 'Descreva os sintomas ou faça uma pergunta...'
+              }
+              rows={3}
+              className={`w-full px-3 py-3 bg-white/5 border rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 max-h-40 placeholder:text-slate-600 transition-all ${
+                isRecording
+                  ? 'border-red-500/40 focus:ring-red-500/40'
+                  : 'border-white/10 focus:ring-blue-500/40'
+              }`}
+            />
+            {isRecording && (
+              <span className="absolute right-3 top-3 w-2 h-2 bg-red-400 rounded-full animate-pulse" />
+            )}
+          </div>
+          <button onClick={sendMessage} disabled={(!input.trim() && !interimText.trim() && !pendingImage) || loading}
             className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 self-end rounded-xl flex items-center justify-center text-white disabled:opacity-30 transition-all"
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
             <Send size={14} className="sm:hidden" />
             <Send size={15} className="hidden sm:block" />
           </button>
         </div>
-        <p className="text-xs text-slate-700 mt-1.5 text-center hidden sm:block">Enter para enviar · Shift+Enter para nova linha</p>
+        <p className="text-xs text-slate-700 pb-1.5 text-center hidden sm:block">Enter para enviar · Shift+Enter para nova linha</p>
       </div>
     </div>
   )
