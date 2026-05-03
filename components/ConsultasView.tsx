@@ -201,9 +201,11 @@ export default function ConsultasView({ userId, userRole, onContinuarChat }: Con
   }
 
   const filtered = consultas.filter(c => {
+    const msgs = c.messages || []
+    const hasConversation = msgs.some(m => m.role === 'user') && msgs.some(m => m.role === 'assistant')
     const matchSearch = !search || c.patientCode.toLowerCase().includes(search.toLowerCase()) || c.municipio.toLowerCase().includes(search.toLowerCase())
     const matchUrgency = filterUrgency === 'all' || c.urgency === filterUrgency
-    return matchSearch && matchUrgency
+    return hasConversation && matchSearch && matchUrgency
   })
 
   const counts = {

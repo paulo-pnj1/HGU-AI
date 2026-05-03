@@ -1,6 +1,6 @@
 // types/index.ts-Tipos globais HGU AI
 
-export type Language = 'pt' | 'kg'
+export type Language = 'pt' | 'kg' | 'en' | 'fr' | 'es' | 'ln'
 export type UrgencyLevel = 'verde' | 'amarelo' | 'vermelho' | 'indefinido'
 export type Disease = 'paludismo' | 'tuberculose' | 'diarreia' | 'saude_materna' | 'outro'
 export type Role = 'medico' | 'enfermeiro' | 'tecnico' | 'admin'

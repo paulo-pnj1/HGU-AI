@@ -21,9 +21,15 @@ export async function GET(req: NextRequest) {
       .limit(50)
       .get()
 
-    // Ordenar em memória por data decrescente
+    // Ordenar em memória por data decrescente e filtrar só consultas com conversa real
     const teleconsultas = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
+      .filter((tc: any) => {
+        const msgs = tc.messages || []
+        const hasUser      = msgs.some((m: any) => m.role === 'user')
+        const hasAssistant = msgs.some((m: any) => m.role === 'assistant')
+        return hasUser && hasAssistant
+      })
       .sort((a: any, b: any) => {
         const ta = a.createdAt?._seconds ?? a.createdAt?.seconds ?? 0
         const tb = b.createdAt?._seconds ?? b.createdAt?.seconds ?? 0

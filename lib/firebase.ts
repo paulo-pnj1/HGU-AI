@@ -69,7 +69,7 @@ export async function eliminarProfissional(uid: string): Promise<void> {
 // ─── CRUD Consultas ──────────────────────────────────────────────
 export async function criarConsulta(
   userId: string, patientCode: string, municipio: string,
-  language: 'pt' | 'kg' = 'pt', patientAge?: number, patientSex?: 'M' | 'F'
+  language: string = 'pt', patientAge?: number, patientSex?: 'M' | 'F'
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'consultas'), {
     userId, patientCode, municipio,
@@ -88,7 +88,14 @@ export async function getConsulta(id: string): Promise<Consultation | null> {
 export async function getConsultasRecentes(userId: string, n = 20): Promise<Consultation[]> {
   const q = query(collection(db, 'consultas'), where('userId', '==', userId), orderBy('createdAt', 'desc'), limit(n))
   const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Consultation))
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Consultation))
+    .filter(c => {
+      const msgs = c.messages || []
+      const hasUser      = msgs.some((m: any) => m.role === 'user')
+      const hasAssistant = msgs.some((m: any) => m.role === 'assistant')
+      return hasUser && hasAssistant
+    })
 }
 export async function getAllConsultas(n = 100): Promise<Consultation[]> {
   const q = query(collection(db, 'consultas'), orderBy('createdAt', 'desc'), limit(n))

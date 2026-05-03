@@ -10,7 +10,7 @@ import {
   MessageSquare, History, Plus, Trash2, Edit3,
   Menu, Home, Settings, LogOut, Baby, RefreshCw,
   Eye, ChevronDown, ChevronUp, ImageIcon, Download, Smartphone, UserCheck, Bell, Building2,
-  Mic, MicOff
+  Mic, MicOff, Languages
 } from 'lucide-react'
 import { MUNICIPIOS_UIGE, Language, UrgencyLevel, Municipio } from '@/types'
 
@@ -93,7 +93,13 @@ function UrgBadge({ u }: { u: UrgencyLevel }) {
   )
 }
 
-function Bubble({ msg, nome }: { msg: ChatMsg; nome: string }) {
+function Bubble({ msg, nome, translation, onTranslate, translating }: {
+  msg: ChatMsg
+  nome: string
+  translation?: string
+  onTranslate?: () => void
+  translating?: boolean
+}) {
   const isUser       = msg.role === 'user'
   const isEspecialista = msg.role === 'especialista'
   const ts = msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
@@ -147,12 +153,35 @@ function Bubble({ msg, nome }: { msg: ChatMsg; nome: string }) {
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
           }
+          {/* Bloco de tradução */}
+          {translation && (
+            <div className="mt-2 pt-2 border-t border-white/10">
+              <p className="text-xs text-violet-300 font-medium mb-1">🇦🇴 Tradução (PT)</p>
+              <p className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">{translation}</p>
+            </div>
+          )}
         </div>
         <div className={`flex items-center gap-2 mt-1 px-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
           <span className="text-xs text-slate-600">
             {ts.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
           </span>
           {msg.urgency && msg.urgency !== 'indefinido' && <UrgBadge u={msg.urgency} />}
+          {/* Botão de tradução por mensagem */}
+          {onTranslate && !translation && (
+            <button
+              onClick={onTranslate}
+              disabled={translating}
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-violet-400 transition-colors disabled:opacity-50"
+              title="Traduzir para Português">
+              {translating
+                ? <Loader2 size={10} className="animate-spin" />
+                : <Languages size={10} />}
+              <span>{translating ? '' : 'Traduzir'}</span>
+            </button>
+          )}
+          {translation && (
+            <span className="text-xs text-violet-400 flex items-center gap-1"><Languages size={10} /> PT</span>
+          )}
         </div>
       </div>
     </div>
@@ -545,14 +574,21 @@ function EditProfileForm({ initial, onSave, patientCode }: {
         {/* Idioma */}
         <div>
           <label className="block text-xs font-medium text-slate-400 mb-1.5"><Globe size={11} className="inline mr-1" />Idioma</label>
-          <div className="flex gap-2">
-            {(['pt', 'kg'] as Language[]).map(l => (
-              <button key={l} onClick={() => setLang(l)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                  lang === l ? 'text-white border-violet-500/50' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { code: 'pt', label: '🇦🇴 Português' },
+              { code: 'kg', label: '🌍 Kikongo' },
+              { code: 'en', label: '🇬🇧 Inglês' },
+              { code: 'fr', label: '🇫🇷 Francês' },
+              { code: 'es', label: '🇪🇸 Espanhol' },
+              { code: 'ln', label: '🇨🇩 Lingala' },
+            ] as { code: Language; label: string }[]).map(({ code, label }) => (
+              <button key={code} onClick={() => setLang(code)}
+                className={`py-2 rounded-xl text-xs font-medium border transition-all ${
+                  lang === code ? 'text-white border-violet-500/50' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
                 }`}
-                style={lang === l ? { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' } : {}}>
-                {l === 'pt' ? '🇦🇴 Português' : '🌍 Kikongo'}
+                style={lang === code ? { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' } : {}}>
+                {label}
               </button>
             ))}
           </div>
@@ -1038,14 +1074,21 @@ function ProfileForm({ initial, onSave, title, subtitle, onBack }: {
         {/* Idioma */}
         <div>
           <label className="block text-xs font-medium text-slate-400 mb-1.5"><Globe size={11} className="inline mr-1" />Idioma</label>
-          <div className="flex gap-2">
-            {(['pt', 'kg'] as Language[]).map(l => (
-              <button key={l} onClick={() => setLang(l)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                  lang === l ? 'text-white border-violet-500/50' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { code: 'pt', label: '🇦🇴 Português' },
+              { code: 'kg', label: '🌍 Kikongo' },
+              { code: 'en', label: '🇬🇧 Inglês' },
+              { code: 'fr', label: '🇫🇷 Francês' },
+              { code: 'es', label: '🇪🇸 Espanhol' },
+              { code: 'ln', label: '🇨🇩 Lingala' },
+            ] as { code: Language; label: string }[]).map(({ code, label }) => (
+              <button key={code} onClick={() => setLang(code)}
+                className={`py-2 rounded-xl text-xs font-medium border transition-all ${
+                  lang === code ? 'text-white border-violet-500/50' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
                 }`}
-                style={lang === l ? { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' } : {}}>
-                {l === 'pt' ? '🇦🇴 Português' : '🌍 Kikongo'}
+                style={lang === code ? { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' } : {}}>
+                {label}
               </button>
             ))}
           </div>
@@ -1167,7 +1210,13 @@ function ConsultasList({ profile, onChat, onDetalhe }: {
     try {
       const res  = await fetch(`/api/teleconsulta/paciente?nome=${encodeURIComponent(profile.nome)}`)
       const json = await res.json()
-      setLista(json.teleconsultas || [])
+      const todas = json.teleconsultas || []
+      // Só mostra consultas com conversa real (pelo menos 1 msg do user e 1 do assistant)
+      const comConversa = todas.filter((tc: any) => {
+        const msgs = tc.messages || []
+        return msgs.some((m: any) => m.role === 'user') && msgs.some((m: any) => m.role === 'assistant')
+      })
+      setLista(comConversa)
     } catch { /* ignora */ }
     finally { setLoading(false) }
   }, [profile.nome])
@@ -1436,6 +1485,45 @@ function ChatScreen({ profile, tcExistente, setView }: {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
+  // ── Estado de tradução ──
+  const [translations,    setTranslations]    = useState<Record<string, string>>({})
+  const [translatingId,   setTranslatingId]   = useState<string | null>(null)
+  const [translatingAll,  setTranslatingAll]  = useState(false)
+  const isNonPt = profile.lang !== 'pt'
+
+  const translateOne = async (msg: ChatMsg) => {
+    if (translatingId || translations[msg.id]) return
+    setTranslatingId(msg.id)
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: msg.content, sourceLang: profile.lang }),
+      })
+      const data = await res.json()
+      if (data.translated) setTranslations(prev => ({ ...prev, [msg.id]: data.translated }))
+    } catch { /* ignora */ }
+    finally { setTranslatingId(null) }
+  }
+
+  const translateAll = async () => {
+    if (translatingAll) return
+    setTranslatingAll(true)
+    const toTranslate = messages.filter(m => !translations[m.id] && m.content)
+    for (const msg of toTranslate) {
+      try {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: msg.content, sourceLang: profile.lang }),
+        })
+        const data = await res.json()
+        if (data.translated) setTranslations(prev => ({ ...prev, [msg.id]: data.translated }))
+      } catch { /* ignora */ }
+    }
+    setTranslatingAll(false)
+  }
+
   // ── Estado de reconhecimento de voz ──
   const [isRecording,   setIsRecording]   = useState(false)
   const [voiceSupport,  setVoiceSupport]  = useState(false)
@@ -1527,13 +1615,25 @@ function ChatScreen({ profile, tcExistente, setView }: {
       recognition.interimResults = true
       recognition.maxAlternatives = 1
 
+      // Índice do último resultado final já processado NESTA sessão de recognition
+      let lastCommittedIndex = -1
+
       recognition.onresult = (e: any) => {
         let interim = ''
         let finalText = ''
-        for (let i = e.resultIndex; i < e.results.length; i++) {
+        for (let i = 0; i < e.results.length; i++) {
           const transcript = e.results[i][0].transcript
-          if (e.results[i].isFinal) { finalText += transcript + ' ' }
-          else { interim += transcript }
+          if (e.results[i].isFinal) {
+            // Só acrescenta se ainda não foi processado nesta sessão (evita duplicação no mobile)
+            if (i > lastCommittedIndex) {
+              finalText += transcript + ' '
+              lastCommittedIndex = i
+            }
+          } else {
+            if (i >= (lastCommittedIndex + 1)) {
+              interim += transcript
+            }
+          }
         }
         if (finalText) {
           setInput(prev => {
@@ -1678,6 +1778,19 @@ function ChatScreen({ profile, tcExistente, setView }: {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <button
+              onClick={translateAll}
+              disabled={translatingAll}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-violet-500/40 text-violet-300 hover:bg-violet-500/20 transition-all disabled:opacity-50"
+              style={{ background: 'rgba(124,58,237,0.1)' }}
+              title="Traduzir toda a conversa para Português">
+              {translatingAll
+                ? <Loader2 size={11} className="animate-spin" />
+                : <Languages size={11} />}
+              {translatingAll ? 'A traduzir...' : '🇦🇴 Traduzir'}
+            </button>
+          )}
           <UrgBadge u={urgency} />
         </div>
       </div>
@@ -1723,7 +1836,16 @@ function ChatScreen({ profile, tcExistente, setView }: {
             </div>
           </div>
         )}
-        {messages.map(m => <Bubble key={m.id} msg={m} nome={profile.nome} />)}
+        {messages.map(m => (
+          <Bubble
+            key={m.id}
+            msg={m}
+            nome={profile.nome}
+            translation={translations[m.id]}
+            onTranslate={() => translateOne(m)}
+            translating={translatingId === m.id}
+          />
+        ))}
         {loading && (
           <div className="flex justify-start mb-4">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center mr-2 flex-shrink-0"

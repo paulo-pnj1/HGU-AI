@@ -2,11 +2,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import ReactMarkdown from 'react-markdown'
+import VoiceInterpreter from '@/components/VoiceInterpreter'
 import {
   Send, FileText, AlertTriangle, CheckCircle, Clock,
   Loader2, X, ImageIcon, Globe, Stethoscope,
   MapPin, RefreshCw, Phone, Mail, UserCheck, Building2,
-  Mic, MicOff
+  Mic, MicOff, Languages
 } from 'lucide-react'
 import { Message, UrgencyLevel, Language, MUNICIPIOS_UIGE, Municipio, Consultation } from '@/types'
 import { criarConsulta } from '@/lib/firebase'
@@ -168,7 +169,12 @@ function ContactosMedicosBloco({ especialidade, onClose }: { especialidade: stri
   )
 }
 
-function MessageBubble({ msg }: { msg: Message }) {
+function MessageBubble({ msg, translation, onTranslate, translating }: {
+  msg: Message
+  translation?: string
+  onTranslate?: () => void
+  translating?: boolean
+}) {
   const isUser = msg.role === 'user'
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3 sm:mb-4`}>
@@ -196,12 +202,31 @@ function MessageBubble({ msg }: { msg: Message }) {
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
           }
+          {translation && (
+            <div className="mt-2 pt-2 border-t border-white/10">
+              <p className="text-xs text-blue-300 font-medium mb-1">🇦🇴 Tradução (PT)</p>
+              <p className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">{translation}</p>
+            </div>
+          )}
         </div>
         <div className={`flex items-center gap-2 mt-1 px-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
           <span className="text-xs text-slate-600">
             {msg.timestamp instanceof Date ? msg.timestamp.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''}
           </span>
           {msg.urgency && msg.urgency !== 'indefinido' && <UrgencyBadge urgency={msg.urgency} />}
+          {onTranslate && !translation && (
+            <button
+              onClick={onTranslate}
+              disabled={translating}
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors disabled:opacity-50"
+              title="Traduzir para Português">
+              {translating ? <Loader2 size={10} className="animate-spin" /> : <Languages size={10} />}
+              <span>{translating ? '' : 'Traduzir'}</span>
+            </button>
+          )}
+          {translation && (
+            <span className="text-xs text-blue-400 flex items-center gap-1"><Languages size={10} /> PT</span>
+          )}
         </div>
       </div>
     </div>
@@ -273,14 +298,21 @@ function ConsultForm({ onStart, userId }: { onStart: (id: string, lang: Language
           </div>
           <div>
             <label className={lbl}><Globe size={11} className="inline mr-1" />Idioma</label>
-            <div className="flex gap-2">
-              {(['pt', 'kg'] as Language[]).map(l => (
-                <button key={l} onClick={() => setLang(l)}
-                  className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-medium border transition-all ${
-                    lang === l ? 'text-white border-blue-500/50' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { code: 'pt', label: '🇦🇴 Português' },
+                { code: 'kg', label: '🌍 Kikongo' },
+                { code: 'en', label: '🇬🇧 Inglês' },
+                { code: 'fr', label: '🇫🇷 Francês' },
+                { code: 'es', label: '🇪🇸 Espanhol' },
+                { code: 'ln', label: '🇨🇩 Lingala' },
+              ] as { code: Language; label: string }[]).map(({ code, label }) => (
+                <button key={code} onClick={() => setLang(code)}
+                  className={`py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all ${
+                    lang === code ? 'text-white border-blue-500/50' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
                   }`}
-                  style={lang === l ? { background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#ffffff' } : {}}>
-                  {l === 'pt' ? '🇦🇴 Português' : '🌍 Kikongo'}
+                  style={lang === code ? { background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#ffffff' } : {}}>
+                  {label}
                 </button>
               ))}
             </div>
@@ -317,6 +349,47 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
   const [contactosMedicos,  setContactosMedicos]   = useState<{ visible: boolean; especialidade: string }>({ visible: false, especialidade: '' })
   const bottomRef = useRef<HTMLDivElement>(null)
 
+  const [showInterpreter, setShowInterpreter] = useState(false)
+
+  // ── Estado de tradução ──
+  const [translations,   setTranslations]   = useState<Record<string, string>>({})
+  const [translatingId,  setTranslatingId]  = useState<string | null>(null)
+  const [translatingAll, setTranslatingAll] = useState(false)
+  const isNonPt = language !== 'pt'
+
+  const translateOne = async (msg: Message) => {
+    if (translatingId || translations[msg.id]) return
+    setTranslatingId(msg.id)
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: msg.content, sourceLang: language }),
+      })
+      const data = await res.json()
+      if (data.translated) setTranslations(prev => ({ ...prev, [msg.id]: data.translated }))
+    } catch { /* ignora */ }
+    finally { setTranslatingId(null) }
+  }
+
+  const translateAll = async () => {
+    if (translatingAll) return
+    setTranslatingAll(true)
+    const toTranslate = messages.filter(m => !translations[m.id] && m.content)
+    for (const msg of toTranslate) {
+      try {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: msg.content, sourceLang: language }),
+        })
+        const data = await res.json()
+        if (data.translated) setTranslations(prev => ({ ...prev, [msg.id]: data.translated }))
+      } catch { /* ignora */ }
+    }
+    setTranslatingAll(false)
+  }
+
   // ── Estados de reconhecimento de voz ──────────────────────────
   const [isRecording,   setIsRecording]   = useState(false)
   const [voiceSupport,  setVoiceSupport]  = useState(false)
@@ -324,7 +397,8 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
   const [wordCount,     setWordCount]     = useState(0)
   const [showKikongo,   setShowKikongo]   = useState(false)
   const recognitionRef  = useRef<any>(null)
-  const shouldRecordRef = useRef(false)   // flag persistente: "utilizador quer gravar" 
+  const shouldRecordRef = useRef(false)   // flag persistente: "utilizador quer gravar"
+  const committedLengthRef = useRef(0)    // nº de chars já confirmados no input (evita duplicação no mobile)
 
   const isKikongo = language === 'kg'
 
@@ -378,13 +452,26 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
       recognition.interimResults = true
       recognition.maxAlternatives = 1
 
+      // Índice do último resultado final já processado NESTA sessão de recognition
+      let lastCommittedIndex = -1
+
       recognition.onresult = (e: any) => {
         let interim = ''
         let finalText = ''
-        for (let i = e.resultIndex; i < e.results.length; i++) {
+        for (let i = 0; i < e.results.length; i++) {
           const transcript = e.results[i][0].transcript
-          if (e.results[i].isFinal) { finalText += transcript + ' ' }
-          else { interim += transcript }
+          if (e.results[i].isFinal) {
+            // Só acrescenta se ainda não foi processado nesta sessão
+            if (i > lastCommittedIndex) {
+              finalText += transcript + ' '
+              lastCommittedIndex = i
+            }
+          } else {
+            // Texto provisório: só mostra o mais recente
+            if (i >= (lastCommittedIndex + 1)) {
+              interim += transcript
+            }
+          }
         }
         if (finalText) {
           setInput(prev => {
@@ -544,6 +631,23 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
           </div>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button
+            onClick={() => setShowInterpreter(true)}
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20 transition-all"
+            title="Abrir intérprete de voz">
+            <Languages size={11} />
+            <span className="hidden sm:inline">Intérprete</span>
+          </button>
+          {messages.length > 0 && (
+            <button
+              onClick={translateAll}
+              disabled={translatingAll}
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-blue-500/40 text-blue-300 hover:bg-blue-500/20 transition-all disabled:opacity-50"
+              title="Traduzir toda a conversa para Português">
+              {translatingAll ? <Loader2 size={11} className="animate-spin" /> : <Languages size={11} />}
+              <span className="hidden sm:inline">{translatingAll ? 'A traduzir...' : '🇦🇴 Traduzir'}</span>
+            </button>
+          )}
           <UrgencyBadge urgency={urgency} />
           <button onClick={gerarPDF} disabled={messages.length < 2 || generatingPDF}
             className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-30 transition-all">
@@ -556,6 +660,13 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
           </button>
         </div>
       </div>
+
+      {showInterpreter && (
+        <VoiceInterpreter
+          patientLang={language}
+          onClose={() => setShowInterpreter(false)}
+        />
+      )}
 
       {/* Aviso */}
       <div className="flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 border-b border-amber-500/10 bg-amber-500/5">
@@ -578,7 +689,15 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
             </div>
           </div>
         )}
-        {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
+        {messages.map(msg => (
+          <MessageBubble
+            key={msg.id}
+            msg={msg}
+            translation={translations[msg.id]}
+            onTranslate={() => translateOne(msg)}
+            translating={translatingId === msg.id}
+          />
+        ))}
         {loading && (
           <div className="flex justify-start mb-4">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center mr-2 flex-shrink-0"
