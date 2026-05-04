@@ -52,12 +52,25 @@ function transcribeWebSpeech(langCode: string): Promise<string> {
     rec.continuous      = false
     rec.interimResults  = false
     rec.maxAlternatives = 1
+
+    let resolved = false
+    let lastTranscript = ''
+
     rec.onresult = (e: any) => {
-      const text = Array.from(e.results as any[]).map((r: any) => r[0].transcript).join(' ').trim()
-      resolve(text)
+      // Pega apenas o último resultado final para evitar duplicados no mobile
+      const results = Array.from(e.results as any[])
+      const finalResults = results.filter((r: any) => r.isFinal)
+      if (finalResults.length > 0) {
+        lastTranscript = finalResults[finalResults.length - 1][0].transcript.trim()
+      }
     }
-    rec.onerror = (e: any) => reject(new Error(e.error))
-    rec.onend   = () => resolve('')
+    rec.onerror = (e: any) => {
+      if (!resolved) { resolved = true; reject(new Error(e.error)) }
+    }
+    rec.onend = () => {
+      // Só resolve aqui (uma única vez), com o último transcript capturado
+      if (!resolved) { resolved = true; resolve(lastTranscript) }
+    }
     rec.start()
   })
 }
