@@ -53,24 +53,42 @@ function transcribeWebSpeech(langCode: string): Promise<string> {
     rec.interimResults  = false
     rec.maxAlternatives = 1
 
-    let resolved = false
-    let lastTranscript = ''
+    let resolved      = false
+    let finalText     = ''
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+    const finish = (text: string) => {
+      if (resolved) return
+      resolved = true
+      if (debounceTimer) clearTimeout(debounceTimer)
+      rec.onresult = null
+      rec.onerror  = null
+      rec.onend    = null
+      try { rec.abort() } catch (_) {}
+      resolve(text)
+    }
 
     rec.onresult = (e: any) => {
-      // Pega apenas o último resultado final para evitar duplicados no mobile
-      const results = Array.from(e.results as any[])
-      const finalResults = results.filter((r: any) => r.isFinal)
-      if (finalResults.length > 0) {
-        lastTranscript = finalResults[finalResults.length - 1][0].transcript.trim()
-      }
+      const result = e.results[e.results.length - 1]
+      if (!result?.isFinal) return
+      const text = result[0]?.transcript?.trim() || ''
+      if (!text) return
+      finalText = text
+      // Debounce 300ms: garante que nao ha mais eventos a chegar no mobile
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => finish(finalText), 300)
     }
+
     rec.onerror = (e: any) => {
       if (!resolved) { resolved = true; reject(new Error(e.error)) }
     }
+
     rec.onend = () => {
-      // Só resolve aqui (uma única vez), com o último transcript capturado
-      if (!resolved) { resolved = true; resolve(lastTranscript) }
+      // Se o debounce ainda nao correu, resolve agora com o que temos
+      if (!debounceTimer) { finish(finalText) }
+      // caso contrario, deixa o debounce terminar
     }
+
     rec.start()
   })
 }
