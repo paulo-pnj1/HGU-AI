@@ -444,6 +444,9 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
     const lang = isEdge ? 'pt-PT' : 'pt-AO'
     shouldRecordRef.current = true
 
+    // sessionId garante que resultados de sessões anteriores são ignorados no mobile
+    let currentSessionId = 0
+
     const buildAndStart = () => {
       if (!shouldRecordRef.current) return
       const recognition = new SR()
@@ -452,22 +455,23 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
       recognition.interimResults = true
       recognition.maxAlternatives = 1
 
-      // Índice do último resultado final já processado NESTA sessão de recognition
+      // Cada sessão tem o seu próprio ID e índice — evita duplicação no mobile
+      const sessionId = ++currentSessionId
       let lastCommittedIndex = -1
 
       recognition.onresult = (e: any) => {
+        // Ignora eventos de sessões antigas
+        if (sessionId !== currentSessionId) return
         let interim = ''
         let finalText = ''
         for (let i = 0; i < e.results.length; i++) {
           const transcript = e.results[i][0].transcript
           if (e.results[i].isFinal) {
-            // Só acrescenta se ainda não foi processado nesta sessão
             if (i > lastCommittedIndex) {
               finalText += transcript + ' '
               lastCommittedIndex = i
             }
           } else {
-            // Texto provisório: só mostra o mais recente
             if (i >= (lastCommittedIndex + 1)) {
               interim += transcript
             }
@@ -484,6 +488,7 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
       }
 
       recognition.onerror = (e: any) => {
+        if (sessionId !== currentSessionId) return
         setInterimText('')
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
           shouldRecordRef.current = false
@@ -492,6 +497,7 @@ export default function ChatWindow({ userId, userName, resumeConsulta, onClearRe
       }
 
       recognition.onend = () => {
+        if (sessionId !== currentSessionId) return
         setInterimText('')
         recognitionRef.current = null
         if (shouldRecordRef.current) {

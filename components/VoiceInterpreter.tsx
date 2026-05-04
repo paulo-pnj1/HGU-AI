@@ -8,6 +8,14 @@ const LANG_LABELS: Record<string, string> = {
   en: 'Inglês',   es: 'Espanhol', ln: 'Lingala', sw: 'Swahili',
 }
 
+// Línguas com suporte nativo no Web Speech API
+const WEB_SPEECH_SUPPORTED = new Set(['pt', 'en', 'fr', 'es', 'sw'])
+
+// BCP-47 para Web Speech API
+const STT_LANG: Record<string, string> = {
+  pt: 'pt-PT', en: 'en-US', fr: 'fr-FR', es: 'es-ES', sw: 'sw-TZ',
+}
+
 // BCP-47 para TTS
 const TTS_LANG: Record<string, string> = {
   pt: 'pt-PT', en: 'en-US', fr: 'fr-FR',
@@ -31,6 +39,56 @@ function speak(text: string, lang: string): Promise<void> {
     utt.onerror = () => resolve()
     window.speechSynthesis.speak(utt)
     setTimeout(resolve, Math.max(3000, text.split(/\s+/).length * 600))
+  })
+}
+
+// ── STT via Web Speech API (com sessionId para evitar duplicação no mobile) ──
+function transcribeWebSpeech(langCode: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) { reject(new Error('Web Speech não disponível')); return }
+    const rec = new SR()
+    rec.lang            = STT_LANG[langCode] || 'pt-PT'
+    rec.continuous      = false
+    rec.interimResults  = false
+    rec.maxAlternatives = 1
+
+    let resolved      = false
+    let finalText     = ''
+    // sessionId impede que eventos atrasados do mobile resolvam a Promise mais de uma vez
+    const sessionId   = Date.now()
+    let activeSession = sessionId
+
+    const finish = (text: string) => {
+      if (resolved || activeSession !== sessionId) return
+      resolved = true
+      rec.onresult = null
+      rec.onerror  = null
+      rec.onend    = null
+      try { rec.abort() } catch (_) {}
+      resolve(text)
+    }
+
+    rec.onresult = (e: any) => {
+      if (activeSession !== sessionId) return
+      // Pega só o último resultado final — ignora intermediários e repetições
+      const last = e.results[e.results.length - 1]
+      if (last?.isFinal) {
+        finalText = last[0]?.transcript?.trim() || ''
+      }
+    }
+
+    rec.onerror = (e: any) => {
+      activeSession = -1
+      if (!resolved) { resolved = true; reject(new Error(e.error)) }
+    }
+
+    rec.onend = () => {
+      // onend é o único ponto de resolução — garante uma única chamada
+      finish(finalText)
+    }
+
+    rec.start()
   })
 }
 
@@ -130,7 +188,7 @@ export default function VoiceInterpreter({ patientLang, patientName, onClose }: 
   const bottomRef      = useRef<HTMLDivElement>(null)
 
   const isPortuguese     = patientLang === 'pt'
-  const useWhisper       = true // Whisper para todas as línguas (mais fiável no mobile)
+  const useWhisper       = !WEB_SPEECH_SUPPORTED.has(patientLang)
   const patLangLabel     = LANG_LABELS[patientLang] || patientLang
 
   useEffect(() => {
@@ -147,13 +205,17 @@ export default function VoiceInterpreter({ patientLang, patientName, onClose }: 
     try {
       let spoken = ''
 
-      // Whisper para todas as línguas — mais fiável no mobile
-      const { stop, result } = transcribeWhisper(patientLang, state => {
-        setIsRecording(state === 'recording')
-      })
-      whisperStopRef.current = stop
-      spoken = await result
-      whisperStopRef.current = null
+      if (useWhisper) {
+        const { stop, result } = transcribeWhisper(patientLang, state => {
+          setIsRecording(state === 'recording')
+        })
+        whisperStopRef.current = stop
+        spoken = await result
+        whisperStopRef.current = null
+      } else {
+        spoken = await transcribeWebSpeech(patientLang)
+        setIsRecording(false)
+      }
 
       if (!spoken) { setStep('idle'); setIsRecording(false); return }
       setPatOrig(spoken)
@@ -176,19 +238,14 @@ export default function VoiceInterpreter({ patientLang, patientName, onClose }: 
     setIsRecording(false)
   }, [])
 
-  // ── Ouvir atendente (Whisper PT) ────────────────────────────────
+  // ── Ouvir atendente (Web Speech PT) ────────────────────────────
   const listenAttendant = useCallback(async () => {
     setError(null)
     setStep('attendant_listening')
     setIsRecording(true)
 
     try {
-      const { stop, result } = transcribeWhisper('pt', state => {
-        setIsRecording(state === 'recording')
-      })
-      whisperStopRef.current = stop
-      const spoken = await result
-      whisperStopRef.current = null
+      const spoken = await transcribeWebSpeech('pt')
       setIsRecording(false)
 
       if (!spoken) { setStep('attendant_reading'); return }
@@ -222,7 +279,7 @@ export default function VoiceInterpreter({ patientLang, patientName, onClose }: 
     patient_listening:    useWhisper ? `A gravar ${patLangLabel}… Prima ■ para terminar` : `A ouvir em ${patLangLabel}…`,
     patient_processing:   'A transcrever e traduzir…',
     attendant_reading:    'Leu a tradução? Prima para responder.',
-    attendant_listening:  'A gravar em Português… Prima ■ para terminar',
+    attendant_listening:  'A ouvir em Português…',
     attendant_processing: `A traduzir para ${patLangLabel}…`,
     speaking_to_patient:  `A reproduzir em ${patLangLabel}…`,
   }
@@ -264,13 +321,15 @@ export default function VoiceInterpreter({ patientLang, patientName, onClose }: 
         </button>
       </div>
 
-      {/* Aviso Whisper */}
-      <div style={{ background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid rgba(245,158,11,0.15)', padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <AlertCircle size={13} color="#f59e0b" />
-        <p style={{ color: '#fbbf24', fontSize: 12, margin: 0 }}>
-          Prima o microfone, fale, depois prima ■ para terminar a gravação.
-        </p>
-      </div>
+      {/* Aviso Whisper para línguas africanas */}
+      {useWhisper && (
+        <div style={{ background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid rgba(245,158,11,0.15)', padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <AlertCircle size={13} color="#f59e0b" />
+          <p style={{ color: '#fbbf24', fontSize: 12, margin: 0 }}>
+            {patLangLabel} usa reconhecimento Whisper AI — prima o microfone, fale, depois prima ■ para terminar a gravação.
+          </p>
+        </div>
+      )}
 
       {/* Historial */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -366,7 +425,7 @@ export default function VoiceInterpreter({ patientLang, patientName, onClose }: 
         {step === 'idle' && (
           <button onClick={listenPatient} style={btn('violet')}>
             <Mic size={20} color="#a78bfa" />
-            {`● Gravar ${patientName || 'paciente'} (${patLangLabel})`}
+            {useWhisper ? `● Gravar ${patientName || 'paciente'} (${patLangLabel})` : `Ouvir ${patientName || 'paciente'} (${patLangLabel})`}
           </button>
         )}
 
@@ -388,10 +447,10 @@ export default function VoiceInterpreter({ patientLang, patientName, onClose }: 
         )}
 
         {step === 'attendant_listening' && (
-          <button onClick={() => { whisperStopRef.current?.(); setIsRecording(false) }} style={recBtn('blue')}>
-            <span style={{ width: 14, height: 14, borderRadius: 3, background: '#ef4444', display: 'inline-block' }} />
-            Parar gravação
-          </button>
+          <div style={recBtn('blue')}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'pulse 0.8s ease-in-out infinite' }} />
+            A ouvir em Português…
+          </div>
         )}
 
         {/* Nova interação */}
