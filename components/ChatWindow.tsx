@@ -235,6 +235,7 @@ function MessageBubble({ msg, translation, onTranslate, translating }: {
 
 function ConsultForm({ onStart, userId }: { onStart: (id: string, lang: Language) => void; userId: string }) {
   const [patientCode, setPatientCode] = useState(() => gerarCodigoDoente())
+  const [patientName, setPatientName] = useState('')
   const [municipio,   setMunicipio]   = useState<Municipio>(MUNICIPIOS_UIGE[0])
   const [lang,        setLang]        = useState<Language>('pt')
   const [age,         setAge]         = useState('')
@@ -245,7 +246,7 @@ function ConsultForm({ onStart, userId }: { onStart: (id: string, lang: Language
     if (!patientCode.trim()) return
     setLoading(true)
     try {
-      const id = await criarConsulta(userId, patientCode, municipio, lang, age ? parseInt(age) : undefined, sex || undefined)
+      const id = await criarConsulta(userId, patientCode, municipio, lang, age ? parseInt(age) : undefined, sex || undefined, patientName.trim() || undefined)
       onStart(id, lang)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
@@ -270,6 +271,11 @@ function ConsultForm({ onStart, userId }: { onStart: (id: string, lang: Language
                 <RefreshCw size={14} />
               </button>
             </div>
+          </div>
+          <div>
+            <label className={lbl}>Nome do paciente</label>
+            <input value={patientName} onChange={e => setPatientName(e.target.value)}
+              placeholder="Nome completo (opcional)" className={inp} />
           </div>
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div>

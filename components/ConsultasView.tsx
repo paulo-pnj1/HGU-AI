@@ -31,10 +31,11 @@ function EditModal({ consulta, onSave, onClose }: { consulta: Consultation; onSa
   const [urgency,  setUrgency]  = useState<UrgencyLevel>(consulta.urgency)
   const [notas,    setNotas]    = useState(consulta.notas || '')
   const [municipio,setMunicipio]= useState(consulta.municipio)
+  const [patientName, setPatientName] = useState(consulta.patientName || '')
   const [saving,   setSaving]   = useState(false)
 
   const handleSave = async () => {
-    setSaving(true); await onSave({ urgency, notas, municipio }); setSaving(false); onClose()
+    setSaving(true); await onSave({ urgency, notas, municipio, patientName: patientName.trim() || undefined }); setSaving(false); onClose()
   }
 
   return (
@@ -50,6 +51,12 @@ function EditModal({ consulta, onSave, onClose }: { consulta: Consultation; onSa
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1"><X size={18} /></button>
         </div>
         <div className="p-4 sm:p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2">Nome do paciente</label>
+            <input value={patientName} onChange={e => setPatientName(e.target.value)}
+              placeholder="Nome completo (opcional)"
+              className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-slate-600" />
+          </div>
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-2">Urgência</label>
             <div className="grid grid-cols-2 gap-2">
@@ -105,6 +112,7 @@ function DetailModal({ consulta, onClose, onContinuarChat }: { consulta: Consult
             </div>
             <div className="min-w-0">
               <h3 className="text-white font-semibold text-sm sm:text-base truncate">{consulta.patientCode}</h3>
+              {consulta.patientName && <p className="text-slate-300 text-xs truncate">{consulta.patientName}</p>}
               <p className="text-slate-400 text-xs">{format(data, "dd MMM yyyy, HH:mm", { locale: pt })}</p>
             </div>
           </div>
@@ -203,7 +211,7 @@ export default function ConsultasView({ userId, userRole, onContinuarChat }: Con
   const filtered = consultas.filter(c => {
     const msgs = c.messages || []
     const hasConversation = msgs.some(m => m.role === 'user') && msgs.some(m => m.role === 'assistant')
-    const matchSearch = !search || c.patientCode.toLowerCase().includes(search.toLowerCase()) || c.municipio.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = !search || c.patientCode.toLowerCase().includes(search.toLowerCase()) || c.municipio.toLowerCase().includes(search.toLowerCase()) || (c.patientName || '').toLowerCase().includes(search.toLowerCase())
     const matchUrgency = filterUrgency === 'all' || c.urgency === filterUrgency
     return hasConversation && matchSearch && matchUrgency
   })
@@ -247,7 +255,7 @@ export default function ConsultasView({ userId, userRole, onContinuarChat }: Con
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por código ou município..."
+            placeholder="Buscar por nome, código ou município..."
             className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40" />
         </div>
       </div>
@@ -279,6 +287,7 @@ export default function ConsultasView({ userId, userRole, onContinuarChat }: Con
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                       <span className="text-xs sm:text-sm font-semibold text-white">{c.patientCode}</span>
+                      {c.patientName && <span className="text-xs sm:text-sm text-slate-300 truncate">{c.patientName}</span>}
                       <UrgencyBadge u={c.urgency} />
                       {c.reportGenerated && <FileText size={10} className="text-emerald-400" />}
                     </div>

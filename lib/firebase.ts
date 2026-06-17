@@ -69,10 +69,11 @@ export async function eliminarProfissional(uid: string): Promise<void> {
 // ─── CRUD Consultas ──────────────────────────────────────────────
 export async function criarConsulta(
   userId: string, patientCode: string, municipio: string,
-  language: string = 'pt', patientAge?: number, patientSex?: 'M' | 'F'
+  language: string = 'pt', patientAge?: number, patientSex?: 'M' | 'F', patientName?: string
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'consultas'), {
     userId, patientCode, municipio,
+    patientName: patientName ?? null,
     patientAge: patientAge ?? null, patientSex: patientSex ?? null,
     messages: [], urgency: 'indefinido', suspectedDiseases: [],
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),

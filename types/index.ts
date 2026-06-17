@@ -33,6 +33,7 @@ export interface Consultation {
   id: string
   userId: string
   patientCode: string
+  patientName?: string
   patientAge?: number
   patientSex?: 'M' | 'F'
   municipio: string
